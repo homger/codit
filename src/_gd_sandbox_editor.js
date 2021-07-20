@@ -21,22 +21,28 @@ class _gd_sandbox_editor{
             this._file.content = this._editor.textContent;
             console.log(`slect start:  ${this._getSelector().anchorOffset} || slect end: ${this._getSelector().focusOffset}`);
         }.bind(this));
-        this._editor.addEventListener("keypress", this.keyAction);
+        this._editor.addEventListener("keydown", this.keyAction);
+
+        this._editor.addEventListener("focus", this.firstLine.bind(this));
 
         this.uiElement = this._editor;
+    }
+    firstLine(){
+        if(this.lineCount == 0)
+            this.newLine()
     }
     get cursorIndex(){
         return this._getSelector().anchorOffset == this._getSelector().focusOffset ? this._getSelector().focusOffset : undefined;
     }
     
-    set cursorIndex(index){
+    /*set cursorIndex(index){
         /*if(index > this.textAreaValueLength){
             this._textArea.anchorOffset = this.textAreaValueLength - 1;
             this._textArea.focusOffset = this.textAreaValueLength - 1;
-        }*/
+        }*//*
         this._getSelector().anchorOffset += index;
         this._getSelector().focusOffset += index;
-    }
+    }*/
     /*moveCursorIndex(index){
         this._textArea.anchorOffset = index;
         this._textArea.focusOffset = index;
@@ -58,6 +64,12 @@ class _gd_sandbox_editor{
             return window.getSelection();
         return undefined;
     }
+    get anchorNode(){
+        return this._getSelector().anchorNode;
+    }
+    get focusNode(){
+        return this._getSelector().focusNode;
+    }
     get selectionActive(){
         return this._getSelector().anchorOffset == this._getSelector().focusOffset ? false : true;
     }
@@ -70,15 +82,15 @@ class _gd_sandbox_editor{
     get anchorOffset(){
         return this._getSelector().anchorOffset;
     }
-    set anchorOffset(s_start){
+    /*set anchorOffset(s_start){
         return this._getSelector().anchorOffset = s_start;
-    }
+    }*/
     get focusOffset(){
         return this._getSelector().focusOffset;
     }
-    set focusOffset(s_end){
+    /*set focusOffset(s_end){
         return this._getSelector().focusOffset = s_end;
-    }
+    }*/
     set className(className){
         this._editor.className = className;
     }
@@ -139,7 +151,7 @@ class _gd_sandbox_editor{
     insertTextAtIndex(text, index){
         
     }
-    print(printValue, cursorOffset){
+    print(printValue, cursorOffset, line){
         const {anchorOffset, focusOffset} = this.anchor_focus_offset;
         let value = this._editor.textContent;
 
@@ -202,17 +214,47 @@ class _gd_sandbox_editor{
     addKeyAction(keyValue, options){
         this.keyActionMap.set(keyValue, options);
     }
+    
     keyAction(keyboardEvent){
-        
+        let preventDef = true
         
         console.log(keyboardEvent.key);
         let key = this.keyActionMap.get(keyboardEvent.key);
         console.log(key)
+        //alert(key.printKey)
         if(key.printKey == true){
-            this.print(key.printValue, key.cursorOffset);
-            keyboardEvent.preventDefault();
+            //keyboardEvent.preventDefault();
+            if(true)
+            if(this.selectionActive && this.focusNode !== this.anchorNode){
+                /*
+
+                let lineNumberDifference = this.focusNode._line_number - this.anchorNode._line_number;
+                if( Math.abs( lineNumberDifference ) > 1){
+                    let startIndex = lineNumberDifference < 0 ? (this.focusNode._line_number + 1) : (this.anchorNode._line_number + 1);
+
+                    for(let i = 0; i < (lineNumberDifference - 1); ++i){
+                        this._lineArray[startIndex + i].uiElement.remove();
+                    }
+
+                }
+                if(this.focusNode._line_number > this.anchorNode._line_number){
+
+                    this._lineArray[this.anchorNode._line_number].deleteFromTo(this.anchorOffset)
+                    this._lineArray[this.focusNode._line_number].deleteFromTo(0, this.focusOffset)
+                }
+                    
+                    */
+                   console.log("delete called")
+                   this.getSelection.deleteFromDocument();
+
+            }
+            if(preventDef)
+                keyboardEvent.preventDefault();
+
+            //this.print(key.printValue, key.cursorOffset);
         }
         else if(key.specialAction){
+            //alert("SPECIAL ACTION")
             key.specialFunction()
             keyboardEvent.preventDefault();
         }
@@ -220,12 +262,15 @@ class _gd_sandbox_editor{
 
 
     newLine(){
-        let line = new _line("")
+        let line = new _line("", this.lineCount)
         this._lineArray.push(line);
         this.lineCount += 1;
         this._editor.append(line.uiElement)
-        this.setCursorPosition(line,0)
+        this.setCursorPosition(line.uiElement,0)
         //this.updateUi();
+    }
+    deleteLine(line){
+        
     }
     
 }
@@ -238,7 +283,7 @@ class _gd_sandbox_editor{
 
 
 class _line{
-    constructor(initialStringValue){
+    constructor(initialStringValue, lineNumber){
         this._gd_string_object = new _gd_string("")
         if(typeof initialStringValue == "string")
             this._gd_string_object = new _gd_string(initialStringValue)
@@ -248,6 +293,8 @@ class _line{
         this.uiElement.addEventListener("keypress", () => alert("HA LINE"))
         //this.uiElement.contentEditable = true
 
+        this.uiElement._line_number = lineNumber
+        
         if(this._gd_string_object._string.length > 0)
             this.updateUi()
         else 
@@ -271,6 +318,12 @@ class _line{
     updateUi(){
         this.uiElement.innerHTML = this._gd_string_object._string
     }
+    update(){
+        this._gd_string_object._string = this.uiElement.innerText
+    }
+    deleteFromTo(a,b){
+        this._gd_string_object.deleteFromTo(a,b)
+    }
 }
 
 class _gd_string{
@@ -286,5 +339,23 @@ class _gd_string{
         index = index % (this._string.length)
 
         this._string = this._string.substring(0, index) + string + this._string.substring(index)
+    }
+    deleteFromTo(a,b){
+        let start = Math.abs(a)
+        if(!b)
+            b = this.string.length
+        let end = Math.abs(b)
+        if( start > end){
+            let cach = start
+            start = end
+            end = cach
+        }
+        if(start <= this._string.length && end <= this._string.length){
+            this._string = this._string.substring(0, start) + this._string.substring(end)
+            return
+        }
+        else
+            throw new Error("a <= this._string.length && b <= this._string.length  is false")
+        
     }
 }
