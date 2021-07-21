@@ -23,13 +23,17 @@ class _gd_sandbox_editor{
         }.bind(this));
         this._editor.addEventListener("keydown", this.keyAction);
 
-        this._editor.addEventListener("focus", this.firstLine.bind(this));
+        this.hasFocus = false
+        this._editor.addEventListener("focus", this.focus.bind(this));
+        this._editor.addEventListener("focusout", this.focus.bind(this));
 
         this.uiElement = this._editor;
     }
-    firstLine(){
-        if(this.lineCount == 0)
-            this.newLine()
+    focus(){
+        this.hasFocus = true
+    }
+    focusout(){
+        this.hasFocus = false
     }
     get cursorIndex(){
         return this._getSelector().anchorOffset == this._getSelector().focusOffset ? this._getSelector().focusOffset : undefined;
@@ -151,7 +155,9 @@ class _gd_sandbox_editor{
     insertTextAtIndex(text, index){
         
     }
-    print(printValue, cursorOffset, line){
+    __print(printValue, index, line){
+        this._lineArray[line].insertString(printValue,index);
+        /*
         const {anchorOffset, focusOffset} = this.anchor_focus_offset;
         let value = this._editor.textContent;
 
@@ -187,7 +193,7 @@ class _gd_sandbox_editor{
         //this._getSelector().focusOffset = focusOffset + printValue.length + cursorOffset;
         //this._getSelector().anchorOffset = anchorOffset + printValue.length + cursorOffset;
         
-
+        */
         //console.log(value);
     }
     /*
@@ -196,7 +202,10 @@ class _gd_sandbox_editor{
         printValue: "",
         cursorOffset: 0,
         specialAction: true,
-        specialFunction: function(textArea){}
+        specialFunction: function(textArea){},
+        wrapText: true,
+        beforeWrapValue:"",
+        afterWrapValue:"",
     }
     */
 
@@ -205,8 +214,15 @@ class _gd_sandbox_editor{
         this.keyActionMap = new Map();
 
         this.addKeyAction("Tab", {printKey: true, printValue: "  "});
-        this.addKeyAction("{", {printKey: true, printValue: "{}", cursorOffset: -1});
-        this.addKeyAction("(", {printKey: true, printValue: "()", cursorOffset: -1});
+        this.addKeyAction("{", {
+            printKey: true, printValue: "{}",
+            wrapText: true, beforeWrapValue:"{", afterWrapValue:"}",
+            cursorOffset: -1
+        });
+        this.addKeyAction("(", {
+            printKey: true, printValue: "()", 
+            wrapText: true, beforeWrapValue:"(", afterWrapValue:")",
+            cursorOffset: -1});
         this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.newLine});
 
@@ -222,42 +238,44 @@ class _gd_sandbox_editor{
         let key = this.keyActionMap.get(keyboardEvent.key);
         console.log(key)
         //alert(key.printKey)
-        if(key.printKey == true){
-            //keyboardEvent.preventDefault();
-            if(true)
-            if(this.selectionActive && this.focusNode !== this.anchorNode){
-                /*
+        if(key !== undefined){
+            if( key.printKey == true && key.wrapText != true){
+                //keyboardEvent.preventDefault();
+                if(this.selectionActive && this.focusNode !== this.anchorNode){
+                    /*
 
-                let lineNumberDifference = this.focusNode._line_number - this.anchorNode._line_number;
-                if( Math.abs( lineNumberDifference ) > 1){
-                    let startIndex = lineNumberDifference < 0 ? (this.focusNode._line_number + 1) : (this.anchorNode._line_number + 1);
+                    let lineNumberDifference = this.focusNode._line_number - this.anchorNode._line_number;
+                    if( Math.abs( lineNumberDifference ) > 1){
+                        let startIndex = lineNumberDifference < 0 ? (this.focusNode._line_number + 1) : (this.anchorNode._line_number + 1);
 
-                    for(let i = 0; i < (lineNumberDifference - 1); ++i){
-                        this._lineArray[startIndex + i].uiElement.remove();
+                        for(let i = 0; i < (lineNumberDifference - 1); ++i){
+                            this._lineArray[startIndex + i].uiElement.remove();
+                        }
+
                     }
+                    if(this.focusNode._line_number > this.anchorNode._line_number){
+
+                        this._lineArray[this.anchorNode._line_number].deleteFromTo(this.anchorOffset)
+                        this._lineArray[this.focusNode._line_number].deleteFromTo(0, this.focusOffset)
+                    }
+                        
+                        */
+                    console.log("delete called")
+                    this.getSelection.deleteFromDocument();
 
                 }
-                if(this.focusNode._line_number > this.anchorNode._line_number){
+                if(preventDef)
+                    keyboardEvent.preventDefault();
 
-                    this._lineArray[this.anchorNode._line_number].deleteFromTo(this.anchorOffset)
-                    this._lineArray[this.focusNode._line_number].deleteFromTo(0, this.focusOffset)
-                }
-                    
-                    */
-                   console.log("delete called")
-                   this.getSelection.deleteFromDocument();
-
+                //this.print(key.printValue, key.cursorOffset);
             }
-            if(preventDef)
+            else if(key.specialAction){
+                //alert("SPECIAL ACTION")
+                key.specialFunction()
                 keyboardEvent.preventDefault();
-
-            //this.print(key.printValue, key.cursorOffset);
+            }
         }
-        else if(key.specialAction){
-            //alert("SPECIAL ACTION")
-            key.specialFunction()
-            keyboardEvent.preventDefault();
-        }
+        console.log(this._lineArray)
     }
 
 
@@ -329,7 +347,7 @@ class _line{
 class _gd_string{
     constructor(initialStringValue){
         
-        this._string = initialStringValue
+        this._string = document.createTextNode(initialStringValue)
     }
 
     addString(string){
