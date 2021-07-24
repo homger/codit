@@ -12,6 +12,7 @@ class _gd_sandbox_editor{
         this.keyAction = this.keyAction.bind(this);
 
         this._lineArray = [];
+        this._lineMap = new Map(); //to test will delete this._lineArray if ok
         this.lineCount = 0;
         this.newLine = this.newLine.bind(this)
         
@@ -30,6 +31,8 @@ class _gd_sandbox_editor{
         this.uiElement = this._editor;
     }
     focus(){
+        if(this.lineCount == 0)
+            this.newLine();
         this.hasFocus = true
     }
     focusout(){
@@ -75,7 +78,23 @@ class _gd_sandbox_editor{
         return this._getSelector().focusNode;
     }
     get selectionActive(){
-        return this._getSelector().anchorOffset == this._getSelector().focusOffset ? false : true;
+        console.log("focus1 :  " + this.hasFocus)
+        let b = this._lineMap.has(this.anchorNode.parentNode) && this._lineMap.has(this.focusNode.parentNode)
+        
+        console.log("node test :  " + b)
+
+        console.log("Anchor node:  ")
+        console.log(this.anchorNode)
+        console.log("Focus node:  ")
+        console.log(this.focusNode)
+        if(this.hasFocus && this._lineMap.has(this.anchorNode) && this._lineMap.has(this.focusNode)){
+
+            //alert("Work")
+            return false
+            return this._getSelector().anchorOffset == this._getSelector().focusOffset ? false : true;
+        }
+            
+        return undefined;
     }
     get anchor_focus_offset(){
         return {
@@ -225,6 +244,17 @@ class _gd_sandbox_editor{
             cursorOffset: -1});
         this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.newLine});
+        this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
+            let lineNode = this.anchorNode.parentNode
+            alert(this._lineMap.get(lineNode).textData );
+        }.bind(this)});
+
+        this.addKeyAction("Pause", {specialAction: true, specialFunction: function(){
+            let lineNode = this.anchorNode.parentNode
+            this._lineMap.get(lineNode).deleteFromTo(1, 2)
+
+            
+        }.bind(this)});
 
     }
     addKeyAction(keyValue, options){
@@ -233,7 +263,8 @@ class _gd_sandbox_editor{
     
     keyAction(keyboardEvent){
         let preventDef = true
-        
+        if(this.selectionActive)
+            return;
         console.log(keyboardEvent.key);
         let key = this.keyActionMap.get(keyboardEvent.key);
         console.log(key)
@@ -282,10 +313,20 @@ class _gd_sandbox_editor{
     newLine(){
         let line = new _line("", this.lineCount)
         this._lineArray.push(line);
+        this._lineMap.set(line.uiElement, line)
+
         this.lineCount += 1;
         this._editor.append(line.uiElement)
         this.setCursorPosition(line.uiElement,0)
         //this.updateUi();
+    }
+    
+    _get_lineNumberX(lineNumber){
+        if( this.lineCount - lineNumber != 1){
+            console.error("lineNumber invalid");
+            return;
+        }
+        return this._lineMap.values()[lineNumber]
     }
     deleteLine(line){
         
@@ -307,34 +348,72 @@ class _line{
             this._gd_string_object = new _gd_string(initialStringValue)
         
         this.uiElement = document.createElement("div")
+        
         this.uiElement.className = "_line"
         this.uiElement.addEventListener("keypress", () => alert("HA LINE"))
         //this.uiElement.contentEditable = true
 
         this.uiElement._line_number = lineNumber
         
-        if(this._gd_string_object._string.length > 0)
+        /*if(this._gd_string_object._string.length > 0){
+            
             this.updateUi()
-        else 
+        }
+            
+        else{
+            this.uiElement.appendChild(this._gd_string_object.)
             this.uiElement.innerHTML = "<br>"
-    }
+        } */
 
-    addString(string){
-        if(typeof string == "string"){
-            this._gd_string_object.addString(string)
-            this.updateUi()
-        }
+
+        this.uiElement.appendChild(this._gd_string_object._string)
+        this.uiElement.appendChild(document.createElement("br"))
         
+        //this.updateUi()
+            
     }
-    insertString(string, index){
-        if(typeof string == "string" && !isNaN(index)){
-            this._gd_string_object.insertString(string, index)
-            this.updateUi()
-        }
+    __setText(text){
+        this.uiElement.innerHTML = "";
+        this.uiElement.appendChild(document.createTextNode(text))
+        this.uiElement.appendChild(document.createElement("br"))
     }
+    get textData(){
+        return this.uiElement.firstChild.wholeText
+    }
+    set textData(newTextData){
+        this.__setText(newTextData)
+        return
+        this.uiElement.replaceChild(document.createTextNode(newTextData), this.uiElement.firstChild)
+    }
+    addString(string){
 
-    updateUi(){
-        this.uiElement.innerHTML = this._gd_string_object._string
+        this.textData = this.textData.concat(string)
+    }
+    
+    insertString(string, index){
+        let textData = this.textData
+        index = index % (this.textData.length)
+
+        this.textData = textData.substring(0, index) + string + textData.substring(index)
+    }
+    deleteFromTo(a,b){
+        let textData = this.textData
+        let start = Math.abs(a)
+        if(!b)
+            b = textData.length
+        let end = Math.abs(b)
+        if( start > end){
+            let cach = start
+            start = end
+            end = cach
+        }
+        if(start <= textData.length && end <= textData.length){
+            this.textData = textData.substring(0, start) + textData.substring(end)
+            return
+        }
+        else
+            throw new Error("a <= this._string.length && b <= this._string.length  is false")
+        
     }
     update(){
         this._gd_string_object._string = this.uiElement.innerText
@@ -344,10 +423,13 @@ class _line{
     }
 }
 
+
+
 class _gd_string{
     constructor(initialStringValue){
         
         this._string = document.createTextNode(initialStringValue)
+        this._string.speProp = "HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
     }
 
     addString(string){
