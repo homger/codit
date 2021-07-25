@@ -17,6 +17,7 @@ class _gd_sandbox_editor{
         this.newLine = this.newLine.bind(this)
         
         this.keyActionSetup();
+        this.mutationObserverSetup()
         
         this._editor.addEventListener("keyup", function(){
             this._file.content = this._editor.textContent;
@@ -251,7 +252,7 @@ class _gd_sandbox_editor{
 
         this.addKeyAction("Pause", {specialAction: true, specialFunction: function(){
             let lineNode = this.anchorNode.parentNode
-            this._lineMap.get(lineNode).deleteFromTo(1, 2)
+            this._lineMap.get(lineNode).deleteFromTo(3, 3)
 
             
         }.bind(this)});
@@ -331,6 +332,11 @@ class _gd_sandbox_editor{
     deleteLine(line){
         
     }
+
+    mutationObserverSetup(){
+        this.lineObserver = new MutationObserver()
+    }
+    lineMutationFonction
     
 }
 
@@ -414,12 +420,6 @@ class _line{
         else
             throw new Error("a <= this._string.length && b <= this._string.length  is false")
         
-    }
-    update(){
-        this._gd_string_object._string = this.uiElement.innerText
-    }
-    deleteFromTo(a,b){
-        this._gd_string_object.deleteFromTo(a,b)
     }
 }
 
