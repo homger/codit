@@ -307,7 +307,7 @@ class _gd_sandbox_editor{
                 keyboardEvent.preventDefault();
             }
         }
-        console.log(this._lineArray)
+        console.log(this._lineMap)
     }
 
 
@@ -334,9 +334,24 @@ class _gd_sandbox_editor{
     }
 
     mutationObserverSetup(){
-        this.lineObserver = new MutationObserver()
+        this.removedNodes = 0
+        this.lineObserver = new MutationObserver(this.lineMutationFonction.bind(this))
+        this.lineObserver.observe(this._editor, {childList: true})
+        
     }
-    lineMutationFonction
+    lineMutationFonction(mutationRecord, mutationObserver){
+        debugger;
+        if(mutationRecord.removedNodes < 1)
+            return
+        
+        alert("DELETED NODE : " + mutationRecord.removedNodes.length)
+        this.removedNodes += mutationRecord.removedNodes.length
+        mutationRecord.removedNodes.array.forEach(element => {
+            if(!this._lineMap.delete(element)){
+                throw new Error("this._lineMap.delete(element)) false || line number :  " + element._get_lineNumber)
+            }
+        });
+    }
     
 }
 
