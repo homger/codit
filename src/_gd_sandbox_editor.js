@@ -88,10 +88,10 @@ class _gd_sandbox_editor{
         console.log(this.anchorNode)
         console.log("Focus node:  ")
         console.log(this.focusNode)
-        if(this.hasFocus && this._lineMap.has(this.anchorNode) && this._lineMap.has(this.focusNode)){
+        if(this.hasFocus && this.anchorNode !== this.focusNode || this.anchorOffset != this.focusOffset && this.selectionIsValid(this._getSelector())){
 
             //alert("Work")
-            return false
+            return true
             return this._getSelector().anchorOffset == this._getSelector().focusOffset ? false : true;
         }
             
@@ -175,6 +175,25 @@ class _gd_sandbox_editor{
     insertTextAtIndex(text, index){
         
     }
+    selectionIsValid(selection){
+        //debugger
+        return this._lineMap.has(selection.anchorNode.parentNode) && this._lineMap.has(selection.focusNode.parentNode)
+        return this._lineMap.has(selection.anchorNode.parentNode) || this._lineMap.has(selection.anchorNode) 
+        && this._lineMap.has(selection.focusNode.parentNode) || this._lineMap.has(selection.focusNode)
+    }
+    __wrapSelection(selection, startPrintValue, endPrintValue){
+        console.log("Will wrap")
+        if(this.selectionIsValid(selection)){
+            let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset
+            if(selection.anchorNode.parentNode === selection.focusNode.parentNode){
+                this._lineMap.get(selection.anchorNode.parentNode).wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue)
+                return
+            }
+            
+            this._lineMap.get(selection.anchorNode.parentNode).insertString(startPrintValue, selection.anchorOffset)
+            this._lineMap.get(selection.focusNode.parentNode).insertString(endPrintValue, selection.focusOffset)
+        }
+    }
     __print(printValue, index, line){
         this._lineArray[line].insertString(printValue,index);
         /*
@@ -228,7 +247,7 @@ class _gd_sandbox_editor{
         afterWrapValue:"",
     }
     */
-
+   
     keyActionSetup(){
 
         this.keyActionMap = new Map();
@@ -245,17 +264,7 @@ class _gd_sandbox_editor{
             cursorOffset: -1});
         this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.newLine});
-        this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
-            let lineNode = this.anchorNode.parentNode
-            alert(this._lineMap.get(lineNode).textData );
-        }.bind(this)});
-
-        this.addKeyAction("Pause", {specialAction: true, specialFunction: function(){
-            let lineNode = this.anchorNode.parentNode
-            this._lineMap.get(lineNode).deleteFromTo(3, 3)
-
-            
-        }.bind(this)});
+        
 
     }
     addKeyAction(keyValue, options){
@@ -264,8 +273,13 @@ class _gd_sandbox_editor{
     
     keyAction(keyboardEvent){
         let preventDef = true
-        if(this.selectionActive)
+        
+        if(this.selectionActive){
+            
+            this.__wrapSelection(this._getSelector(), keyboardEvent.key,keyboardEvent.key)
+            keyboardEvent.preventDefault()
             return;
+        }
         console.log(keyboardEvent.key);
         let key = this.keyActionMap.get(keyboardEvent.key);
         console.log(key)
@@ -334,23 +348,24 @@ class _gd_sandbox_editor{
     }
 
     mutationObserverSetup(){
-        this.removedNodes = 0
+        this.removedNodesCount = 0
         this.lineObserver = new MutationObserver(this.lineMutationFonction.bind(this))
         this.lineObserver.observe(this._editor, {childList: true})
         
     }
     lineMutationFonction(mutationRecord, mutationObserver){
-        debugger;
-        if(mutationRecord.removedNodes < 1)
-            return
+        //debugger;
+        if(mutationRecord.length > 0 && mutationRecord[0].type == "childList"){
         
-        alert("DELETED NODE : " + mutationRecord.removedNodes.length)
-        this.removedNodes += mutationRecord.removedNodes.length
-        mutationRecord.removedNodes.array.forEach(element => {
-            if(!this._lineMap.delete(element)){
-                throw new Error("this._lineMap.delete(element)) false || line number :  " + element._get_lineNumber)
-            }
-        });
+            mutationRecord.forEach(mutation => {
+                if(mutation.removedNodes){
+                    mutation.removedNodes.forEach(removedNode => {
+                        if(this._lineMap.delete(removedNode))
+                        this.removedNodesCount += 1
+                    })
+                }
+            })
+        }
     }
     
 }
@@ -386,7 +401,7 @@ class _line{
             this.uiElement.innerHTML = "<br>"
         } */
 
-
+        //***to-do for mutiline textwrap */
         this.uiElement.appendChild(this._gd_string_object._string)
         this.uiElement.appendChild(document.createElement("br"))
         
@@ -395,8 +410,8 @@ class _line{
     }
     __setText(text){
         this.uiElement.innerHTML = "";
-        this.uiElement.appendChild(document.createTextNode(text))
-        this.uiElement.appendChild(document.createElement("br"))
+        this.uiElement.appendChild(document.createTextNode(text ))
+        //this.uiElement.appendChild(document.createElement("br"))
     }
     get textData(){
         return this.uiElement.firstChild.wholeText
@@ -413,21 +428,39 @@ class _line{
     
     insertString(string, index){
         let textData = this.textData
-        index = index % (this.textData.length)
+        index = index % (this.textData.length + 1)
 
         this.textData = textData.substring(0, index) + string + textData.substring(index)
     }
-    deleteFromTo(a,b){
-        let textData = this.textData
-        let start = Math.abs(a)
-        if(!b)
-            b = textData.length
-        let end = Math.abs(b)
-        if( start > end){
-            let cach = start
-            start = end
-            end = cach
+    wrapText(startIndex, startString, endIndex, endString){
+        /**
+         * 
+         * to-do Check parameters values
+         */
+
+         let textData = this.textData
+         let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex)
+         startIndex = orderedIndex.a, endIndex = orderedIndex.b
+         this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex)
+
+    }
+    __orderAndCheckIndex(a,b = undefined){
+
+        let length = this.textData.length
+        a = Math.abs(a)
+        if(b === undefined)
+            b = length - 1
+        b = Math.abs(b)
+        if( a > b){
+            let cach = a
+            a = b
+            b = cach
         }
+        return {a,b}
+    }
+    deleteFromTo(a,b){
+        let order = this.__orderAndCheckIndex(a,b)
+        start = order.a, end = order.b
         if(start <= textData.length && end <= textData.length){
             this.textData = textData.substring(0, start) + textData.substring(end)
             return
