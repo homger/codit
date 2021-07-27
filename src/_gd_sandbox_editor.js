@@ -185,7 +185,7 @@ class _gd_sandbox_editor{
         console.log("Will wrap")
         if(this.selectionIsValid(selection)){
             let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset
-            if(selection.anchorNode.parentNode === selection.focusNode.parentNode){
+            if(selection.anchorNode === selection.focusNode){
                 this._lineMap.get(selection.anchorNode.parentNode).wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue)
                 return
             }
@@ -264,6 +264,9 @@ class _gd_sandbox_editor{
             cursorOffset: -1});
         this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.newLine});
+        this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
+            this._lineMap.get(this.anchorNode.parentNode).insertBrutContent("<br>", this.anchorOffset)
+        }.bind(this)});
         
 
     }
@@ -367,6 +370,11 @@ class _gd_sandbox_editor{
             })
         }
     }
+
+    /// highlightSystem
+    
+
+    ///
     
 }
 
@@ -409,12 +417,14 @@ class _line{
             
     }
     __setText(text){
+        /*
         this.uiElement.innerHTML = "";
-        this.uiElement.appendChild(document.createTextNode(text ))
+        this.uiElement.appendChild(document.createTextNode(text ))*/
         //this.uiElement.appendChild(document.createElement("br"))
+        this.uiElement.innerText = text
     }
     get textData(){
-        return this.uiElement.firstChild.wholeText
+        return this.uiElement.innerText
     }
     set textData(newTextData){
         this.__setText(newTextData)
@@ -444,6 +454,53 @@ class _line{
          this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex)
 
     }
+
+    get brutContent(){
+        return this.uiElement.innerHTML
+    }
+    set brutContent(newBrutContent){
+        this.uiElement.innerHTML = newBrutContent
+    }
+    insertBrutContent(brutString, index){
+        let brutContent = this.brutContent
+        index = index % (this.brutContent.length + 1)
+
+        this.brutContent = brutContent.substring(0, index) + brutString + brutContent.substring(index)
+    }
+
+    getBrutContent(){
+
+    }
+
+    wrapBrutContent(startIndex, startContent, endIndex, endContent){
+        /**
+         * 
+         * to-do Check parameters values
+         */
+
+         let brutContent = this.brutContent
+         let orderedIndex = this._brut__orderAndCheckIndex(startIndex, endIndex)
+         startIndex = orderedIndex.a, endIndex = orderedIndex.b
+         this.brutContent = brutContent.substring(0, startIndex) + startContent + brutContent.substring(startIndex, endIndex) + endContent + textData.brutContent(endIndex)
+
+    }
+    
+
+    _brut__orderAndCheckIndex(a,b = undefined){
+
+        let length = this.brutContent.length
+        a = Math.abs(a)
+        if(b === undefined)
+            b = length - 1
+        b = Math.abs(b)
+        if( a > b){
+            let cach = a
+            a = b
+            b = cach
+        }
+        return {a,b}
+    }
+
     __orderAndCheckIndex(a,b = undefined){
 
         let length = this.textData.length
