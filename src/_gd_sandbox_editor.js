@@ -16,6 +16,7 @@ class _gd_sandbox_editor{
         this.lineCount = 0;
         this.newLine = this.newLine.bind(this)
         
+        this.copyPastSetup()
         this.keyActionSetup();
         this.mutationObserverSetup()
         
@@ -356,6 +357,9 @@ class _gd_sandbox_editor{
         this.lineObserver.observe(this._editor, {childList: true})
         
     }
+    reorderLines(){
+        this._lineMap.forEach((value, key) => )
+    }
     lineMutationFonction(mutationRecord, mutationObserver){
         //debugger;
         if(mutationRecord.length > 0 && mutationRecord[0].type == "childList"){
@@ -370,6 +374,21 @@ class _gd_sandbox_editor{
             })
         }
     }
+    //
+
+    copyPastSetup(){
+        this.copyBuffer = null
+    }
+
+    copy(selection){
+
+    }
+    past(){
+
+    }
+    cut(selection){
+        
+    }
 
     /// highlightSystem
     
@@ -383,7 +402,88 @@ class _gd_sandbox_editor{
 
 
 
-
+/* const HIGHLIGHT_TAG = `<hlt class="gdh fn sl1 used1"></hlt>`  = 36 char
+                                      gdh cl   
+                                      gdh kw
+                                      gdh vr
+                                      gdh cd
+                                      gdh st
+gdh = gdhighlight
+sl1 = selecttion, sl0 = no selection
+used1 = variable or function... is used, used0 = variable or function... is not used
+fn = function
+cl = className
+kw = keywords : class / new / this / function
+vr = variable
+cd = conditional statment like if else switch... and return ??
+st = string
+*/
+const HIGHLIGHT_TAG = {
+    noTag: {
+        start: "",
+        end: "",
+        startLength: 0,
+        endLength: 0,
+        totalLength: 0, 
+        used: false,
+    },
+    function: {
+        start: "<fn>",
+        end: "</fn>",
+        startLength: 4,
+        endLength: 5,
+        totalLength: 9, 
+        used: true,
+    },
+    className: {
+        start: "<cl>",
+        end: "</cl>",
+        startLength: 4,
+        endLength: 5,
+        totalLength: 9, 
+        used: true,
+    },
+    keywords: {
+        start: "<kw>",
+        end: "</kw>",
+        startLength: 4,
+        endLength: 5,
+        totalLength: 9, 
+        used: true,
+    },
+    variable: {
+        start: "<vr>",
+        end: "</vr>",
+        startLength: 4,
+        endLength: 5,
+        totalLength: 9, 
+        used: false,
+    },
+    conditional: {
+        start: "<cd>",
+        end: "</cd>",
+        startLength: 4,
+        endLength: 5,
+        totalLength: 9, 
+        used: true,
+    },
+    string: {
+        start: "<st>",
+        end: "</st>",
+        startLength: 4,
+        endLength: 5,
+        totalLength: 9, 
+        used: false,
+    },
+    selection: {
+        start: "<sl>",
+        end: "</sl>",
+        startLength: 4,
+        endLength: 5,
+        totalLength: 9,
+        used: true,
+    },
+}
 
 class _line{
     constructor(initialStringValue, lineNumber){
@@ -410,12 +510,14 @@ class _line{
         } */
 
         //***to-do for mutiline textwrap */
+        this.highlightSetup()
         this.uiElement.appendChild(this._gd_string_object._string)
         this.uiElement.appendChild(document.createElement("br"))
         
         //this.updateUi()
             
     }
+    
     __setText(text){
         /*
         this.uiElement.innerHTML = "";
@@ -526,8 +628,36 @@ class _line{
             throw new Error("a <= this._string.length && b <= this._string.length  is false")
         
     }
+
+    highlightSetup(){
+        this._highlightMap = new Map()
+    }
+    highlight(id, startIndex, endIndex, type = HIGHLIGHT_TAG.noTag){
+        let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex)
+
+    }
+    
 }
 
+const INTERVAL_ARRAY = [
+    [0,0], //interval 1
+    [0,0], // interval 2
+]
+function interval(intervalArray = INTERVAL_ARRAY){
+    let intervallMap = new Map()
+    intervalArray.forEach((interval, index) => {
+        if(intervallMap.has(interval[0]))
+            intervallMap.get(interval[0]).push(index)
+        else
+            intervallMap.set(interval[0], [index])
+
+        if(intervallMap.has(interval[1]))
+            intervallMap.get(interval[1]).push(index)
+        else
+            intervallMap.set(interval[1], [index])
+    })
+    return intervallMap
+}
 
 
 class _gd_string{
