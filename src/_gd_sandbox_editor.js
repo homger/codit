@@ -80,23 +80,26 @@ class _gd_sandbox_editor{
         return this._getSelector().focusNode;
     }
     get selectionActive(){
-        console.log("focus1 :  " + this.hasFocus)
-        let b = this._lineMap.has(this.anchorNode.parentNode) && this._lineMap.has(this.focusNode.parentNode)
+        let selection = this._getSelector()
+        return this.selectionIsValid(selection) && selection.anchorNode !== selection.focusNode || selection.anchorOffset != selection.focusOffset
+    }
+    get singlelineSelectionActive(){
+        let selection = this._getSelector()
+        return this.selectionIsValid(selection) && selection.anchorNode === selection.focusNode || selection.anchorOffset != selection.focusOffset
+    }
+
+    get multilineSelectionActive(){
+        let selection = this._getSelector()
+        return this.selectionIsValid(selection) && selection.anchorNode !== selection.focusNode
+    }
+    selectionIsValid(selection){
+        //debugger
+        //return this._lineMap.has(selection.anchorNode.parentNode) && this._lineMap.has(selection.focusNode.parentNode)
+
         
-        console.log("node test :  " + b)
-
-        console.log("Anchor node:  ")
-        console.log(this.anchorNode)
-        console.log("Focus node:  ")
-        console.log(this.focusNode)
-        if(this.hasFocus && this.anchorNode !== this.focusNode || this.anchorOffset != this.focusOffset && this.selectionIsValid(this._getSelector())){
-
-            //alert("Work")
-            return true
-            return this._getSelector().anchorOffset == this._getSelector().focusOffset ? false : true;
-        }
-            
-        return undefined;
+        // this._lineArray ver
+        return this._lineArray[selection.anchorNode.parentNode._line_number] === selection.anchorNode.parentNode._gd_line && 
+        this._lineArray[selection.focusNode.parentNode._line_number] === selection.focusNode.parentNode._gd_line
     }
     get anchor_focus_offset(){
         return {
@@ -176,23 +179,17 @@ class _gd_sandbox_editor{
     insertTextAtIndex(text, index){
         
     }
-    selectionIsValid(selection){
-        //debugger
-        return this._lineMap.has(selection.anchorNode.parentNode) && this._lineMap.has(selection.focusNode.parentNode)
-        return this._lineMap.has(selection.anchorNode.parentNode) || this._lineMap.has(selection.anchorNode) 
-        && this._lineMap.has(selection.focusNode.parentNode) || this._lineMap.has(selection.focusNode)
-    }
     __wrapSelection(selection, startPrintValue, endPrintValue){
         console.log("Will wrap")
         if(this.selectionIsValid(selection)){
             let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset
             if(selection.anchorNode === selection.focusNode){
-                this._lineMap.get(selection.anchorNode.parentNode).wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue)
+                this._lineArray[selection.anchorNode.parentNode._line_number].wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue)
                 return
             }
             
-            this._lineMap.get(selection.anchorNode.parentNode).insertString(startPrintValue, selection.anchorOffset)
-            this._lineMap.get(selection.focusNode.parentNode).insertString(endPrintValue, selection.focusOffset)
+            this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset)
+            this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset)
         }
     }
     __print(printValue, index, line){
@@ -326,6 +323,7 @@ class _gd_sandbox_editor{
             }
         }
         console.log(this._lineMap)
+        console.log(this._lineArray)
     }
 
 
@@ -358,7 +356,22 @@ class _gd_sandbox_editor{
         
     }
     reorderLines(){
-        this._lineMap.forEach((value, key) => )
+        let lineNumber = 0;
+        this._lineArray.forEach(line => {
+
+            if(line._line_number != lineNumber)
+                line._line_number = lineNumber
+            ++lineNumber
+        })
+    }
+    deleteLine(lineNumber){
+        if(lineNumber < 0 || lineNumber >= this.lineCount)
+            return false
+        let arrayCach = this._lineArray.splice(lineNumber)
+        arrayCach.shift()
+        this._lineArray.concat(arrayCach)
+        this.reorderLines()
+        return true
     }
     lineMutationFonction(mutationRecord, mutationObserver){
         //debugger;
@@ -367,11 +380,16 @@ class _gd_sandbox_editor{
             mutationRecord.forEach(mutation => {
                 if(mutation.removedNodes){
                     mutation.removedNodes.forEach(removedNode => {
-                        if(this._lineMap.delete(removedNode))
-                        this.removedNodesCount += 1
+
+                        //if(this._lineMap.delete(removedNode))
+                        if(this.deleteLine(removedNode._line_number)){
+                            this.lineCount -=
+                            this.removedNodesCount += 1
+                        }
                     })
                 }
             })
+            this.reorderLines()
         }
     }
     //
@@ -381,7 +399,11 @@ class _gd_sandbox_editor{
     }
 
     copy(selection){
+        if(this.selectionIsValid(selection)){
+            if(this.multilineSelectionActive(selection)){
 
+            }
+        }
     }
     past(){
 
@@ -498,7 +520,7 @@ class _line{
         //this.uiElement.contentEditable = true
 
         this.uiElement._line_number = lineNumber
-        
+        this.uiElement._gd_line = this;
         /*if(this._gd_string_object._string.length > 0){
             
             this.updateUi()
@@ -532,6 +554,14 @@ class _line{
         this.__setText(newTextData)
         return
         this.uiElement.replaceChild(document.createTextNode(newTextData), this.uiElement.firstChild)
+    }
+    get_textData_range(a = 0 , b = undefined){
+        let orderedIndex = this.__orderAndCheckIndex(a,b)
+        
+        return this.textData.substring(orderedIndex.a,orderedIndex.b)
+    }
+    get_textData_range_as_line(a = 0 , b = undefined){
+        return new _line(this.get_textData_range(a,b))
     }
     addString(string){
 
