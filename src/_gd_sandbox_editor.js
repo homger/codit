@@ -191,6 +191,7 @@ class _gd_sandbox_editor{
             this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset)
             this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset)
         }
+        console.log()
     }
     __print(printValue, index, line){
         this._lineArray[line].insertString(printValue,index);
@@ -275,7 +276,7 @@ class _gd_sandbox_editor{
     keyAction(keyboardEvent){
         let preventDef = true
         
-        if(this.selectionActive){
+        if(this.selectionActive && keyboardEvent.key != "Delete"){
             
             this.__wrapSelection(this._getSelector(), keyboardEvent.key,keyboardEvent.key)
             keyboardEvent.preventDefault()
@@ -359,18 +360,23 @@ class _gd_sandbox_editor{
         let lineNumber = 0;
         this._lineArray.forEach(line => {
 
-            if(line._line_number != lineNumber)
-                line._line_number = lineNumber
+            if(line.uiElement._line_number != lineNumber)
+                line.uiElement._line_number = lineNumber
             ++lineNumber
         })
+    }
+    reorderLines_startAt_index(index,){
+        while(index < this._lineArray.length){
+            this._lineArray[index].uiElement._line_number = index
+            ++index
+        }
     }
     deleteLine(lineNumber){
         if(lineNumber < 0 || lineNumber >= this.lineCount)
             return false
-        let arrayCach = this._lineArray.splice(lineNumber)
-        arrayCach.shift()
-        this._lineArray.concat(arrayCach)
-        this.reorderLines()
+        this._lineArray.splice(lineNumber, 1)
+        this.reorderLines_startAt_index(reorderLines_startAt_index)
+        this.lineCount -= 1
         return true
     }
     lineMutationFonction(mutationRecord, mutationObserver){
@@ -383,7 +389,7 @@ class _gd_sandbox_editor{
 
                         //if(this._lineMap.delete(removedNode))
                         if(this.deleteLine(removedNode._line_number)){
-                            this.lineCount -=
+                            console.log(this.lineCount)
                             this.removedNodesCount += 1
                         }
                     })
