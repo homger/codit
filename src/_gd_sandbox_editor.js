@@ -183,6 +183,8 @@ class _gd_sandbox_editor{
         console.log("Will wrap")
         if(this.selectionIsValid(selection)){
             let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset
+            console.log("WRAP anchorOffset    :  " + anchorOffset)
+            console.log("WRAP focusOffset    :  " + focusOffset)
             if(selection.anchorNode === selection.focusNode){
                 this._lineArray[selection.anchorNode.parentNode._line_number].wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue)
                 return
@@ -328,26 +330,45 @@ class _gd_sandbox_editor{
     }
 
 
-    newLine(){
-        let line = new _line("", this.lineCount)
+    newLine(line = new _line("")){
+        
+        line.setLineNumber(this.lineCount)
         this._lineArray.push(line);
         this._lineMap.set(line.uiElement, line)
 
         this.lineCount += 1;
         this._editor.append(line.uiElement)
         this.setCursorPosition(line.uiElement,0)
+        this.checkLineCount()
         //this.updateUi();
     }
-    
+    insertLine(line = new _line(""), index = this.lineCount){
+        
+        if(index < 0 || index > this.lineCount)
+            return false
+        this._lineArray.splice(index, 0, line)
+        this.reorderLines_startAt_index(index)
+        this.lineCount += 1
+        this.checkLineCount()
+        return true
+    }
+    checkLineCount(){
+        let i = 0;
+        this._lineArray.forEach(line => {
+            if(line._line_number != i){
+                console.log(line)
+                throw new Error("Line n° " + i + "  number invalid")
+            
+            }
+            ++i
+        })
+    }
     _get_lineNumberX(lineNumber){
         if( this.lineCount - lineNumber != 1){
             console.error("lineNumber invalid");
             return;
         }
         return this._lineMap.values()[lineNumber]
-    }
-    deleteLine(line){
-        
     }
 
     mutationObserverSetup(){
@@ -360,14 +381,15 @@ class _gd_sandbox_editor{
         let lineNumber = 0;
         this._lineArray.forEach(line => {
 
-            if(line.uiElement._line_number != lineNumber)
-                line.uiElement._line_number = lineNumber
+            if(line._line_number != lineNumber)
+                line.setLineNumber(lineNumber)
             ++lineNumber
         })
+        this.checkLineCount()
     }
-    reorderLines_startAt_index(index,){
+    reorderLines_startAt_index(index){
         while(index < this._lineArray.length){
-            this._lineArray[index].uiElement._line_number = index
+            this._lineArray[index].setLineNumber(index)
             ++index
         }
     }
@@ -375,7 +397,7 @@ class _gd_sandbox_editor{
         if(lineNumber < 0 || lineNumber >= this.lineCount)
             return false
         this._lineArray.splice(lineNumber, 1)
-        this.reorderLines_startAt_index(reorderLines_startAt_index)
+        this.reorderLines_startAt_index(lineNumber)
         this.lineCount -= 1
         return true
     }
@@ -514,7 +536,7 @@ const HIGHLIGHT_TAG = {
 }
 
 class _line{
-    constructor(initialStringValue, lineNumber){
+    constructor(initialStringValue){
         this._gd_string_object = new _gd_string("")
         if(typeof initialStringValue == "string")
             this._gd_string_object = new _gd_string(initialStringValue)
@@ -525,7 +547,7 @@ class _line{
         this.uiElement.addEventListener("keypress", () => alert("HA LINE"))
         //this.uiElement.contentEditable = true
 
-        this.uiElement._line_number = lineNumber
+        
         this.uiElement._gd_line = this;
         /*if(this._gd_string_object._string.length > 0){
             
@@ -544,6 +566,10 @@ class _line{
         
         //this.updateUi()
             
+    }
+    setLineNumber(lineNumber){
+        this.uiElement._line_number = lineNumber
+        this._line_number = lineNumber
     }
     
     __setText(text){
