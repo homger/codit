@@ -71,7 +71,8 @@ class _gd_sandbox_editor{
     _getSelector(){
         if(document.activeElement === this._editor)
             return window.getSelection();
-        return undefined;
+        //return Error(" document.activeElement === this._editor is false");
+        return undefined
     }
     get anchorNode(){
         return this._getSelector().anchorNode;
@@ -195,7 +196,8 @@ class _gd_sandbox_editor{
         }
         console.log()
     }
-    __print(printValue, index, line){
+    __print(printValue, index = this.anchorOffset, line = this.anchorNode.parentNode._line_number){
+        console.log(line)
         this._lineArray[line].insertString(printValue,index);
         /*
         const {anchorOffset, focusOffset} = this.anchor_focus_offset;
@@ -260,13 +262,18 @@ class _gd_sandbox_editor{
             cursorOffset: -1
         });
         this.addKeyAction("(", {
+            printKey: true, printValue: "()",
+            wrapText: true, beforeWrapValue:"(", afterWrapValue:")",
+            cursorOffset: -1
+        });
+        this.addKeyAction("(", {
             printKey: true, printValue: "()", 
             wrapText: true, beforeWrapValue:"(", afterWrapValue:")",
             cursorOffset: -1});
         this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.newLine});
         this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
-            this._lineMap.get(this.anchorNode.parentNode).insertBrutContent("<br>", this.anchorOffset)
+            this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
         }.bind(this)});
         
 
@@ -276,57 +283,7 @@ class _gd_sandbox_editor{
     }
     
     keyAction(keyboardEvent){
-        let preventDef = true
         
-        if(this.selectionActive && keyboardEvent.key != "Delete"){
-            
-            this.__wrapSelection(this._getSelector(), keyboardEvent.key,keyboardEvent.key)
-            keyboardEvent.preventDefault()
-            return;
-        }
-        console.log(keyboardEvent.key);
-        let key = this.keyActionMap.get(keyboardEvent.key);
-        console.log(key)
-        //alert(key.printKey)
-        if(key !== undefined){
-            if( key.printKey == true && key.wrapText != true){
-                //keyboardEvent.preventDefault();
-                if(this.selectionActive && this.focusNode !== this.anchorNode){
-                    /*
-
-                    let lineNumberDifference = this.focusNode._line_number - this.anchorNode._line_number;
-                    if( Math.abs( lineNumberDifference ) > 1){
-                        let startIndex = lineNumberDifference < 0 ? (this.focusNode._line_number + 1) : (this.anchorNode._line_number + 1);
-
-                        for(let i = 0; i < (lineNumberDifference - 1); ++i){
-                            this._lineArray[startIndex + i].uiElement.remove();
-                        }
-
-                    }
-                    if(this.focusNode._line_number > this.anchorNode._line_number){
-
-                        this._lineArray[this.anchorNode._line_number].deleteFromTo(this.anchorOffset)
-                        this._lineArray[this.focusNode._line_number].deleteFromTo(0, this.focusOffset)
-                    }
-                        
-                        */
-                    console.log("delete called")
-                    this.getSelection.deleteFromDocument();
-
-                }
-                if(preventDef)
-                    keyboardEvent.preventDefault();
-
-                //this.print(key.printValue, key.cursorOffset);
-            }
-            else if(key.specialAction){
-                //alert("SPECIAL ACTION")
-                key.specialFunction()
-                keyboardEvent.preventDefault();
-            }
-        }
-        console.log(this._lineMap)
-        console.log(this._lineArray)
     }
 
 
@@ -537,31 +494,18 @@ const HIGHLIGHT_TAG = {
 
 class _line{
     constructor(initialStringValue){
-        this._gd_string_object = new _gd_string("")
-        if(typeof initialStringValue == "string")
-            this._gd_string_object = new _gd_string(initialStringValue)
         
         this.uiElement = document.createElement("div")
         
         this.uiElement.className = "_line"
-        this.uiElement.addEventListener("keypress", () => alert("HA LINE"))
-        //this.uiElement.contentEditable = true
 
         
         this.uiElement._gd_line = this;
-        /*if(this._gd_string_object._string.length > 0){
-            
-            this.updateUi()
-        }
-            
-        else{
-            this.uiElement.appendChild(this._gd_string_object.)
-            this.uiElement.innerHTML = "<br>"
-        } */
+        
 
         //***to-do for mutiline textwrap */
         this.highlightSetup()
-        this.uiElement.appendChild(this._gd_string_object._string)
+        this.textData = initialStringValue
         this.uiElement.appendChild(document.createElement("br"))
         
         //this.updateUi()
@@ -578,6 +522,7 @@ class _line{
         this.uiElement.appendChild(document.createTextNode(text ))*/
         //this.uiElement.appendChild(document.createElement("br"))
         this.uiElement.innerText = text
+        this.appendBr()
     }
     get textData(){
         return this.uiElement.innerText
@@ -618,12 +563,15 @@ class _line{
          this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex)
 
     }
-
+    appendBr(){
+        this.uiElement.innerHTML += "<br>"
+    }
     get brutContent(){
         return this.uiElement.innerHTML
     }
     set brutContent(newBrutContent){
         this.uiElement.innerHTML = newBrutContent
+        this.appendBr()
     }
     insertBrutContent(brutString, index){
         let brutContent = this.brutContent
@@ -721,38 +669,3 @@ function interval(intervalArray = INTERVAL_ARRAY){
     return intervallMap
 }
 
-
-class _gd_string{
-    constructor(initialStringValue){
-        
-        this._string = document.createTextNode(initialStringValue)
-        this._string.speProp = "HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    }
-
-    addString(string){
-        this._string = this._string.concat(string)
-    }
-    insertString(string, index){
-        index = index % (this._string.length)
-
-        this._string = this._string.substring(0, index) + string + this._string.substring(index)
-    }
-    deleteFromTo(a,b){
-        let start = Math.abs(a)
-        if(!b)
-            b = this.string.length
-        let end = Math.abs(b)
-        if( start > end){
-            let cach = start
-            start = end
-            end = cach
-        }
-        if(start <= this._string.length && end <= this._string.length){
-            this._string = this._string.substring(0, start) + this._string.substring(end)
-            return
-        }
-        else
-            throw new Error("a <= this._string.length && b <= this._string.length  is false")
-        
-    }
-}

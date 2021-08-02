@@ -20,10 +20,4 @@ function main(){
     editor._lineArray[1].addString("Line 222")
 */
     let div = document.getElementById("main");
-    let d = new _gd_string("Hello them")
-
-
-    div.innerHTML = d._string
-    d.insertString(" TT ", 10)
-    div.innerHTML = d._string
 }
