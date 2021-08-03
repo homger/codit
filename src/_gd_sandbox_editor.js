@@ -283,7 +283,12 @@ class _gd_sandbox_editor{
     }
     
     keyAction(keyboardEvent){
-        
+        try {
+            let key = this.keyActionMap(keyboardEvent.key);
+            
+        } catch (error) {
+            console.log(error);
+        }
     }
 
 
@@ -297,6 +302,7 @@ class _gd_sandbox_editor{
         this._editor.append(line.uiElement)
         this.setCursorPosition(line.uiElement,0)
         this.checkLineCount()
+        console.log(this.lineCount)
         //this.updateUi();
     }
     insertLine(line = new _line(""), index = this.lineCount){
@@ -372,6 +378,13 @@ class _gd_sandbox_editor{
                             this.removedNodesCount += 1
                         }
                     })
+                }
+                else if(mutation.addedNodes){
+                    console.log("ADDED NODES : ")
+                    mutation.addedNodes.forEach(addedNodes => {
+                        console.log(addedNodes)
+                    })
+                    
                 }
             })
             this.reorderLines()
