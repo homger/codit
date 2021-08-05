@@ -191,6 +191,11 @@ class _gd_sandbox_editor{
                 return
             }
             
+            if(selection.anchorNode.parentNode._line_number > selection.focusNode.parentNode._line_number){
+                this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset)
+                this._lineArray[selection.focusNode.parentNode._line_number].insertString(startPrintValue, selection.focusOffset)
+                return
+            }
             this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset)
             this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset)
         }
@@ -270,7 +275,7 @@ class _gd_sandbox_editor{
             printKey: true, printValue: "()", 
             wrapText: true, beforeWrapValue:"(", afterWrapValue:")",
             cursorOffset: -1});
-        this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
+        //this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.newLine});
         this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
             this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
@@ -284,8 +289,38 @@ class _gd_sandbox_editor{
     
     keyAction(keyboardEvent){
         try {
-            let key = this.keyActionMap(keyboardEvent.key);
-            
+            let key = this.keyActionMap.get(keyboardEvent.key);
+            if(this.selectionActive){
+                if(key.specialAction){
+                    this._getSelector().deleteFromDocument()
+                    key.specialFunction()
+                    keyboardEvent.preventDefault();
+                    return
+
+                }
+                if(key.wrapText){
+                    this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue)
+                    keyboardEvent.preventDefault();
+                    return
+                }
+                if(key.printKey){
+                    this._getSelector().deleteFromDocument()
+                    this.__print(key.printValue)
+                    this.preventDefault()
+                    return
+                }
+            }
+            if(key.specialAction){
+                key.specialFunction()
+                keyboardEvent.preventDefault();
+                return
+
+            }
+            if(key.printKey){
+                this.__print(key.printValue)
+                this.preventDefault()
+                return
+            }
         } catch (error) {
             console.log(error);
         }
@@ -522,7 +557,8 @@ class _line{
         this.uiElement.appendChild(document.createElement("br"))
         
         //this.updateUi()
-            
+        this.fixedChildListFixedCount = 0
+        this.childListPresentSet = new Set()
     }
     setLineNumber(lineNumber){
         this.uiElement._line_number = lineNumber
@@ -535,7 +571,7 @@ class _line{
         this.uiElement.appendChild(document.createTextNode(text ))*/
         //this.uiElement.appendChild(document.createElement("br"))
         this.uiElement.innerText = text
-        this.appendBr()
+        this.fixChildList()
     }
     get textData(){
         return this.uiElement.innerText
@@ -556,6 +592,7 @@ class _line{
     addString(string){
 
         this.textData = this.textData.concat(string)
+        this.fixChildList()
     }
     
     insertString(string, index){
@@ -563,6 +600,7 @@ class _line{
         index = index % (this.textData.length + 1)
 
         this.textData = textData.substring(0, index) + string + textData.substring(index)
+        this.fixChildList()
     }
     wrapText(startIndex, startString, endIndex, endString){
         /**
@@ -574,29 +612,41 @@ class _line{
          let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex)
          startIndex = orderedIndex.a, endIndex = orderedIndex.b
          this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex)
+         this.fixChildList()
 
-    }
-    appendBr(){
-        this.uiElement.innerHTML += "<br>"
     }
     get brutContent(){
         return this.uiElement.innerHTML
     }
     set brutContent(newBrutContent){
         this.uiElement.innerHTML = newBrutContent
-        this.appendBr()
+        this.fixChildList()
     }
     insertBrutContent(brutString, index){
         let brutContent = this.brutContent
         index = index % (this.brutContent.length + 1)
 
         this.brutContent = brutContent.substring(0, index) + brutString + brutContent.substring(index)
+        this.fixChildList()
     }
 
     getBrutContent(){
 
     }
 
+    fixChildList(){
+        console.log(this.uiElement.childNodes)
+        if(this.uiElement.childNodes.length != 2){
+            this.uiElement.childNodes.forEach(node => 
+                this.childListFixedSet.add(node.nodeName)
+                )
+            //this.uiElement.innerHTML = this.uiElement.innerText + "<br>"
+            ++this.fixedChildListFixedCount
+            console.log(this.fixedChildListFixedCount)
+            console.log(this.childListPresentSet)
+        }
+
+    }
     wrapBrutContent(startIndex, startContent, endIndex, endContent){
         /**
          * 
