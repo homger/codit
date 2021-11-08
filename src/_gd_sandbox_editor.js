@@ -399,13 +399,13 @@ class _gd_sandbox_editor{
         this.lineCount -= 1
         return true
     }
-    lineMutationFonction(mutationRecord, mutationObserver){
+    lineMutationFonction(mutationRecordArray, mutationObserver){
         //debugger;
-        if(mutationRecord.length > 0 && mutationRecord[0].type == "childList"){
+        if(mutationRecordArray.length > 0 && mutationRecordArray[0].type == "childList"){
         
-            mutationRecord.forEach(mutation => {
-                if(mutation.removedNodes){
-                    mutation.removedNodes.forEach(removedNode => {
+            mutationRecordArray.forEach(mutationRecord => {
+                if(mutationRecord.removedNodes){
+                    mutationRecord.removedNodes.forEach(removedNode => {
 
                         //if(this._lineMap.delete(removedNode))
                         if(this.deleteLine(removedNode._line_number)){
@@ -414,9 +414,9 @@ class _gd_sandbox_editor{
                         }
                     })
                 }
-                else if(mutation.addedNodes){
+                else if(mutationRecord.addedNodes){
                     console.log("ADDED NODES : ")
-                    mutation.addedNodes.forEach(addedNodes => {
+                    mutationRecord.addedNodes.forEach(addedNodes => {
                         console.log(addedNodes)
                     })
                     
