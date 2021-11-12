@@ -20,10 +20,10 @@ class _gd_sandbox_editor{
         this.keyActionSetup();
         this.mutationObserverSetup()
         
-        this._editor.addEventListener("keyup", function(){
+        /*this._editor.addEventListener("keyup", function(){
             this._file.content = this._editor.textContent;
             console.log(`slect start:  ${this._getSelector().anchorOffset} || slect end: ${this._getSelector().focusOffset}`);
-        }.bind(this));
+        }.bind(this));*/
         this._editor.addEventListener("keydown", this.keyAction);
 
         this.hasFocus = false
@@ -385,13 +385,13 @@ class _gd_sandbox_editor{
         })
         this.checkLineCount()
     }
-    reorderLines_startAt_index(index){
+    reorderLines_startAt_index(index){//VF_1
         while(index < this._lineArray.length){
             this._lineArray[index].setLineNumber(index)
             ++index
         }
     }
-    deleteLine(lineNumber){
+    deleteLine(lineNumber){//VF_1
         if(lineNumber < 0 || lineNumber >= this.lineCount)
             return false
         this._lineArray.splice(lineNumber, 1)
@@ -404,7 +404,7 @@ class _gd_sandbox_editor{
         if(mutationRecordArray.length > 0 && mutationRecordArray[0].type == "childList"){
         
             mutationRecordArray.forEach(mutationRecord => {
-                if(mutationRecord.removedNodes){
+                if(mutationRecord.removedNodes.length > 0){
                     mutationRecord.removedNodes.forEach(removedNode => {
 
                         //if(this._lineMap.delete(removedNode))
@@ -414,21 +414,29 @@ class _gd_sandbox_editor{
                         }
                     })
                 }
-                else if(mutationRecord.addedNodes){
+                else if(mutationRecord.addedNodes.length > 0){
                     console.log("ADDED NODES : ")
                     mutationRecord.addedNodes.forEach(addedNodes => {
-                        console.log(addedNodes)
+                        console.log("added node : " + addedNodes)
                     })
                     
                 }
             })
             this.reorderLines()
+            console.log(mutationRecordArray)
+            console.log("Out : mutationRecordArray if")
         }
     }
     //
 
     copyPastSetup(){
         this.copyBuffer = null
+        this._editor.addEventListener("paste", function(pasteEvent){
+            let pasteData = pasteEvent.clipboardData.getData("text/plain")
+            console.log("paste DATA " + pasteData.split(/\n/))
+            /*pasteEvent.preventDefault()
+            this.insertLine(new _line(pasteData))*/
+        });
     }
 
     copy(selection){
@@ -445,6 +453,9 @@ class _gd_sandbox_editor{
         
     }
 
+    updateEditor_from_lineArray(){ //use after reorder line
+
+    }
     /// highlightSystem
     
 
