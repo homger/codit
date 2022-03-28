@@ -1,6 +1,6 @@
 'use strict';
 
-
+//@GDn&p+gbg
 class _gd_sandbox_editor{
     constructor(){
 
@@ -14,11 +14,12 @@ class _gd_sandbox_editor{
         this._lineArray = [];
         this._lineMap = new Map(); //to test will delete this._lineArray if ok
         this.lineCount = 0;
-        this.newLine = this.newLine.bind(this)
+        this.newLine = this.newLine.bind(this);
+        this.insertLine = this.insertLine.bind(this);
         
-        this.copyPastSetup()
+        this.copyPastSetup();
         this.keyActionSetup();
-        this.mutationObserverSetup()
+        this.mutationObserverSetup();
         
         /*this._editor.addEventListener("keyup", function(){
             this._file.content = this._editor.textContent;
@@ -35,10 +36,10 @@ class _gd_sandbox_editor{
     focus(){
         if(this.lineCount == 0)
             this.newLine();
-        this.hasFocus = true
+        this.hasFocus = true;
     }
     focusout(){
-        this.hasFocus = false
+        this.hasFocus = false;
     }
     get cursorIndex(){
         return this._getSelector().anchorOffset == this._getSelector().focusOffset ? this._getSelector().focusOffset : undefined;
@@ -72,7 +73,7 @@ class _gd_sandbox_editor{
         if(document.activeElement === this._editor)
             return window.getSelection();
         //return Error(" document.activeElement === this._editor is false");
-        return undefined
+        return undefined;
     }
     get anchorNode(){
         return this._getSelector().anchorNode;
@@ -81,18 +82,32 @@ class _gd_sandbox_editor{
         return this._getSelector().focusNode;
     }
     get selectionActive(){
-        let selection = this._getSelector()
-        return this.selectionIsValid(selection) && selection.anchorNode !== selection.focusNode || selection.anchorOffset != selection.focusOffset
+        let selection = this._getSelector();
+        return this.selectionIsValid(selection) && selection.anchorNode !== selection.focusNode || selection.anchorOffset != selection.focusOffset;
     }
     get singlelineSelectionActive(){
-        let selection = this._getSelector()
-        return this.selectionIsValid(selection) && selection.anchorNode === selection.focusNode || selection.anchorOffset != selection.focusOffset
+        let selection = this._getSelector();
+        return this.selectionIsValid(selection) && selection.anchorNode === selection.focusNode && selection.anchorOffset != selection.focusOffset;
     }
 
     get multilineSelectionActive(){
-        let selection = this._getSelector()
-        return this.selectionIsValid(selection) && selection.anchorNode !== selection.focusNode
+        let selection = this._getSelector();
+        return this.selectionIsValid(selection) && selection.anchorNode !== selection.focusNode;
     }
+
+    // Focsued line if singlelineSelectionActive is false
+    get focusedLine(){
+
+        if(!this.singlelineSelectionActive){
+            let selection = this._getSelector();
+            if(selection.isCollapsed)
+                return selection.anchorNode.parentNode._line_number;
+        }
+
+        return undefined;
+
+    }
+    
     selectionIsValid(selection){
         //debugger
         //return this._lineMap.has(selection.anchorNode.parentNode) && this._lineMap.has(selection.focusNode.parentNode)
@@ -100,7 +115,7 @@ class _gd_sandbox_editor{
         
         // this._lineArray ver
         return this._lineArray[selection.anchorNode.parentNode._line_number] === selection.anchorNode.parentNode._gd_line && 
-        this._lineArray[selection.focusNode.parentNode._line_number] === selection.focusNode.parentNode._gd_line
+        this._lineArray[selection.focusNode.parentNode._line_number] === selection.focusNode.parentNode._gd_line;
     }
     get anchor_focus_offset(){
         return {
@@ -125,7 +140,7 @@ class _gd_sandbox_editor{
     }
 
     setCursorPosition(node, index){
-        this._getSelector().collapse(node, index)
+        this._getSelector().collapse(node, index);
     }
 
     get className(){
@@ -174,35 +189,40 @@ class _gd_sandbox_editor{
         if(this.selectionActive){
 
         }
-        this.insertTextAtIndex(text, index);
+        this.insertTextAtLine(text, 0);
     }
     
-    insertTextAtIndex(text, index){
-        
+    insertTextAtLine(text, lineNumber = 0){
+        this.insertTextAtLineIndex(text, lineNumber, 0);
+    }
+    insertTextAtLineIndex(text, lineNumber = 0, index = 0){
+        if(this._lineArray[lineNumber]){
+            this._lineArray[lineNumber].insertString(text, index);
+        }
     }
     __wrapSelection(selection, startPrintValue, endPrintValue){
         console.log("Will wrap")
         if(this.selectionIsValid(selection)){
-            let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset
-            console.log("WRAP anchorOffset    :  " + anchorOffset)
-            console.log("WRAP focusOffset    :  " + focusOffset)
+            let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset;
+            console.log("WRAP anchorOffset    :  " + anchorOffset);
+            console.log("WRAP focusOffset    :  " + focusOffset);
             if(selection.anchorNode === selection.focusNode){
-                this._lineArray[selection.anchorNode.parentNode._line_number].wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue)
-                return
+                this._lineArray[selection.anchorNode.parentNode._line_number].wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue);
+                return;
             }
             
             if(selection.anchorNode.parentNode._line_number > selection.focusNode.parentNode._line_number){
-                this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset)
-                this._lineArray[selection.focusNode.parentNode._line_number].insertString(startPrintValue, selection.focusOffset)
-                return
+                this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset);
+                this._lineArray[selection.focusNode.parentNode._line_number].insertString(startPrintValue, selection.focusOffset);
+                return;
             }
-            this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset)
-            this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset)
+            this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset);
+            this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset);
         }
-        console.log()
+        console.log();
     }
     __print(printValue, index = this.anchorOffset, line = this.anchorNode.parentNode._line_number){
-        console.log(line)
+        console.log(line);
         this._lineArray[line].insertString(printValue,index);
         /*
         const {anchorOffset, focusOffset} = this.anchor_focus_offset;
@@ -260,6 +280,10 @@ class _gd_sandbox_editor{
 
         this.keyActionMap = new Map();
 
+        this.addKeyAction("Shift", {specialAction: true, specialFunction: function(){
+            console.log(this.anchorNode);
+        }.bind(this)});
+
         this.addKeyAction("Tab", {printKey: true, printValue: "  "});
         this.addKeyAction("{", {
             printKey: true, printValue: "{}",
@@ -276,7 +300,7 @@ class _gd_sandbox_editor{
             wrapText: true, beforeWrapValue:"(", afterWrapValue:")",
             cursorOffset: -1});
         //this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
-        this.addKeyAction("Enter", {specialAction: true, specialFunction: this.newLine});
+        this.addKeyAction("Enter", {specialAction: true, specialFunction: this.insertLine});
         this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
             this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
         }.bind(this)});
@@ -290,37 +314,40 @@ class _gd_sandbox_editor{
     keyAction(keyboardEvent){
         try {
             let key = this.keyActionMap.get(keyboardEvent.key);
+
             if(this.selectionActive){
                 if(key.specialAction){
-                    this._getSelector().deleteFromDocument()
-                    key.specialFunction()
+                    this._getSelector().deleteFromDocument();
+                    key.specialFunction();
                     keyboardEvent.preventDefault();
-                    return
+                    return;
 
                 }
                 if(key.wrapText){
-                    this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue)
+                    this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
                     keyboardEvent.preventDefault();
-                    return
+                    return;
                 }
                 if(key.printKey){
-                    this._getSelector().deleteFromDocument()
-                    this.__print(key.printValue)
-                    this.preventDefault()
-                    return
+                    this._getSelector().deleteFromDocument();
+                    this.__print(key.printValue);
+                    keyboardEvent.preventDefault();
+                    return;
                 }
             }
             if(key.specialAction){
-                key.specialFunction()
+                key.specialFunction();
                 keyboardEvent.preventDefault();
-                return
+                return;
 
             }
             if(key.printKey){
-                this.__print(key.printValue)
-                this.preventDefault()
-                return
+                this.__print(key.printValue);
+                keyboardEvent.preventDefault();
+                return;
             }
+            
+            //alert(keyboardEvent.key);
         } catch (error) {
             console.log(error);
         }
@@ -329,50 +356,64 @@ class _gd_sandbox_editor{
 
     newLine(line = new _line("")){
         
-        line.setLineNumber(this.lineCount)
+        line.setLineNumber(this.lineCount);
         this._lineArray.push(line);
-        this._lineMap.set(line.uiElement, line)
+        this._lineMap.set(line.uiElement, line);
 
         this.lineCount += 1;
-        this._editor.append(line.uiElement)
-        this.setCursorPosition(line.uiElement,0)
-        this.checkLineCount()
-        console.log(this.lineCount)
+        this._editor.append(line.uiElement);
+        this.setCursorPosition(line.uiElement,0);
+        this.checkLineCount();
+        console.log(this.lineCount);
         //this.updateUi();
     }
-    insertLine(line = new _line(""), index = this.lineCount){
+    insertLine(line = new _line(""), index = this.focusedLine){
+        // alert(); 
         
         if(index < 0 || index > this.lineCount)
-            return false
-        this._lineArray.splice(index, 0, line)
-        this.reorderLines_startAt_index(index)
-        this.lineCount += 1
-        this.checkLineCount()
-        return true
+            return false;
+        this._lineArray.splice(index, 0, line);
+        
+        line.setLineNumber(index);
+        this.reorderLines_startAt_index(index);
+        if(index == this.lineCount){
+            this._editor.append(line.uiElement);
+        }
+        else{
+            this._lineArray[index + 1].uiElement.insertAdjacentElement("afterend", line.uiElement);
+        }
+
+        this.setCursorPosition(line.uiElement, this.cursorIndex % line.textData.length);
+        this.lineCount += 1;
+        
+        this.checkLineCount();
+        console.log(this._lineArray);
+        return true;
     }
     checkLineCount(){
         let i = 0;
         this._lineArray.forEach(line => {
             if(line._line_number != i){
-                console.log(line)
-                throw new Error("Line n° " + i + "  number invalid")
-            
+                console.log(line);
+                throw new Error("Line n° " + i + "  number invalid");
+                //this.reorderLines_startAt_index(i);
+                return;
             }
             ++i
-        })
+        });
     }
     _get_lineNumberX(lineNumber){
         if( this.lineCount - lineNumber != 1){
             console.error("lineNumber invalid");
             return;
         }
-        return this._lineMap.values()[lineNumber]
+        return this._lineMap.values()[lineNumber];
     }
 
     mutationObserverSetup(){
-        this.removedNodesCount = 0
-        this.lineObserver = new MutationObserver(this.lineMutationFonction.bind(this))
-        this.lineObserver.observe(this._editor, {childList: true})
+        this.removedNodesCount = 0;
+        this.lineObserver = new MutationObserver(this.lineMutationFonction.bind(this));
+        this.lineObserver.observe(this._editor, {childList: true});
         
     }
     reorderLines(){
@@ -382,22 +423,22 @@ class _gd_sandbox_editor{
             if(line._line_number != lineNumber)
                 line.setLineNumber(lineNumber)
             ++lineNumber
-        })
-        this.checkLineCount()
+        });
+        this.checkLineCount();
     }
     reorderLines_startAt_index(index){//VF_1
         while(index < this._lineArray.length){
-            this._lineArray[index].setLineNumber(index)
-            ++index
+            this._lineArray[index].setLineNumber(index);
+            ++index;
         }
     }
     deleteLine(lineNumber){//VF_1
         if(lineNumber < 0 || lineNumber >= this.lineCount)
-            return false
-        this._lineArray.splice(lineNumber, 1)
-        this.reorderLines_startAt_index(lineNumber)
-        this.lineCount -= 1
-        return true
+            return false;
+        this._lineArray.splice(lineNumber, 1);
+        this.reorderLines_startAt_index(lineNumber);
+        this.lineCount -= 1;
+        return true;
     }
     lineMutationFonction(mutationRecordArray, mutationObserver){
         //debugger;
@@ -409,33 +450,33 @@ class _gd_sandbox_editor{
 
                         //if(this._lineMap.delete(removedNode))
                         if(this.deleteLine(removedNode._line_number)){
-                            console.log(this.lineCount)
-                            this.removedNodesCount += 1
+                            console.log(this.lineCount);
+                            this.removedNodesCount += 1;
                         }
-                    })
+                    });
                 }
                 else if(mutationRecord.addedNodes.length > 0){
-                    console.log("ADDED NODES : ")
+                    console.log("ADDED NODES : ");
                     mutationRecord.addedNodes.forEach(addedNodes => {
-                        console.log("added node : " + addedNodes)
-                    })
+                        console.log("added node : " + addedNodes);
+                    });
                     
                 }
-            })
-            this.reorderLines()
-            console.log(mutationRecordArray)
-            console.log("Out : mutationRecordArray if")
+            });
+            this.reorderLines();
+            console.log(mutationRecordArray);
+            console.log("Out : mutationRecordArray if");
         }
     }
     //
 
     copyPastSetup(){
-        this.copyBuffer = null
+        this.copyBuffer = null;
         this._editor.addEventListener("paste", function(pasteEvent){
-            let pasteData = pasteEvent.clipboardData.getData("text/plain")
-            console.log("paste DATA " + pasteData.split(/\n/))
-            /*pasteEvent.preventDefault()
-            this.insertLine(new _line(pasteData))*/
+            let pasteData = pasteEvent.clipboardData.getData("text/plain");
+            console.log("paste DATA :" + pasteData.split(/\n/));
+            pasteEvent.preventDefault();
+            this.insertLine(new _line(pasteData));
         });
     }
 
@@ -447,7 +488,7 @@ class _gd_sandbox_editor{
         }
     }
     past(){
-
+        
     }
     cut(selection){
         
@@ -554,26 +595,26 @@ const HIGHLIGHT_TAG = {
 class _line{
     constructor(initialStringValue){
         
-        this.uiElement = document.createElement("div")
+        this.uiElement = document.createElement("div");
         
-        this.uiElement.className = "_line"
+        this.uiElement.className = "_line";
 
         
         this.uiElement._gd_line = this;
         
 
         //***to-do for mutiline textwrap */
-        this.highlightSetup()
-        this.textData = initialStringValue
-        this.uiElement.appendChild(document.createElement("br"))
+        this.highlightSetup();
+        this.textData = initialStringValue;
+        this.uiElement.appendChild(document.createElement("br"));
         
         //this.updateUi()
-        this.fixedChildListFixedCount = 0
-        this.childListPresentSet = new Set()
+        this.fixedChildListFixedCount = 0;
+        this.childListPresentSet = new Set();
     }
     setLineNumber(lineNumber){
-        this.uiElement._line_number = lineNumber
-        this._line_number = lineNumber
+        this.uiElement._line_number = lineNumber;
+        this._line_number = lineNumber;
     }
     
     __setText(text){
@@ -581,37 +622,37 @@ class _line{
         this.uiElement.innerHTML = "";
         this.uiElement.appendChild(document.createTextNode(text ))*/
         //this.uiElement.appendChild(document.createElement("br"))
-        this.uiElement.innerText = text
-        this.fixChildList()
+        this.uiElement.innerText = text;
+        this.fixChildList();
     }
     get textData(){
-        return this.uiElement.innerText
+        return this.uiElement.innerText;
     }
     set textData(newTextData){
-        this.__setText(newTextData)
-        return
-        this.uiElement.replaceChild(document.createTextNode(newTextData), this.uiElement.firstChild)
+        this.__setText(newTextData);
+        return;
+        this.uiElement.replaceChild(document.createTextNode(newTextData), this.uiElement.firstChild);
     }
     get_textData_range(a = 0 , b = undefined){
-        let orderedIndex = this.__orderAndCheckIndex(a,b)
+        let orderedIndex = this.__orderAndCheckIndex(a,b);
         
-        return this.textData.substring(orderedIndex.a,orderedIndex.b)
+        return this.textData.substring(orderedIndex.a,orderedIndex.b);
     }
     get_textData_range_as_line(a = 0 , b = undefined){
-        return new _line(this.get_textData_range(a,b))
+        return new _line(this.get_textData_range(a,b));
     }
     addString(string){
 
-        this.textData = this.textData.concat(string)
-        this.fixChildList()
+        this.textData = this.textData.concat(string);
+        this.fixChildList();
     }
     
     insertString(string, index){
-        let textData = this.textData
-        index = index % (this.textData.length + 1)
+        let textData = this.textData;
+        index = index % (this.textData.length + 1);
 
-        this.textData = textData.substring(0, index) + string + textData.substring(index)
-        this.fixChildList()
+        this.textData = textData.substring(0, index) + string + textData.substring(index);
+        this.fixChildList();
     }
     wrapText(startIndex, startString, endIndex, endString){
         /**
@@ -619,26 +660,26 @@ class _line{
          * to-do Check parameters values
          */
 
-         let textData = this.textData
-         let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex)
-         startIndex = orderedIndex.a, endIndex = orderedIndex.b
-         this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex)
-         this.fixChildList()
+         let textData = this.textData;
+         let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
+         startIndex = orderedIndex.a, endIndex = orderedIndex.b;
+         this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex);
+         this.fixChildList();
 
     }
     get brutContent(){
-        return this.uiElement.innerHTML
+        return this.uiElement.innerHTML;
     }
     set brutContent(newBrutContent){
-        this.uiElement.innerHTML = newBrutContent
-        this.fixChildList()
+        this.uiElement.innerHTML = newBrutContent;
+        this.fixChildList();
     }
     insertBrutContent(brutString, index){
-        let brutContent = this.brutContent
-        index = index % (this.brutContent.length + 1)
+        let brutContent = this.brutContent;
+        index = index % (this.brutContent.length + 1);
 
-        this.brutContent = brutContent.substring(0, index) + brutString + brutContent.substring(index)
-        this.fixChildList()
+        this.brutContent = brutContent.substring(0, index) + brutString + brutContent.substring(index);
+        this.fixChildList();
     }
 
     getBrutContent(){
@@ -646,15 +687,15 @@ class _line{
     }
 
     fixChildList(){
-        console.log(this.uiElement.childNodes)
+        console.log(this.uiElement.childNodes);
         if(this.uiElement.childNodes.length != 2){
             this.uiElement.childNodes.forEach(node => 
                 this.childListFixedSet.add(node.nodeName)
-                )
+                );
             //this.uiElement.innerHTML = this.uiElement.innerText + "<br>"
-            ++this.fixedChildListFixedCount
-            console.log(this.fixedChildListFixedCount)
-            console.log(this.childListPresentSet)
+            ++this.fixedChildListFixedCount;
+            console.log(this.fixedChildListFixedCount);
+            console.log(this.childListPresentSet);
         }
 
     }
@@ -664,60 +705,60 @@ class _line{
          * to-do Check parameters values
          */
 
-         let brutContent = this.brutContent
-         let orderedIndex = this._brut__orderAndCheckIndex(startIndex, endIndex)
-         startIndex = orderedIndex.a, endIndex = orderedIndex.b
-         this.brutContent = brutContent.substring(0, startIndex) + startContent + brutContent.substring(startIndex, endIndex) + endContent + textData.brutContent(endIndex)
+         let brutContent = this.brutContent;
+         let orderedIndex = this._brut__orderAndCheckIndex(startIndex, endIndex);
+         startIndex = orderedIndex.a, endIndex = orderedIndex.b;
+         this.brutContent = brutContent.substring(0, startIndex) + startContent + brutContent.substring(startIndex, endIndex) + endContent + textData.brutContent(endIndex);
 
     }
     
 
     _brut__orderAndCheckIndex(a,b = undefined){
 
-        let length = this.brutContent.length
-        a = Math.abs(a)
+        let length = this.brutContent.length;
+        a = Math.abs(a);
         if(b === undefined)
-            b = length - 1
-        b = Math.abs(b)
+            b = length - 1;
+        b = Math.abs(b);
         if( a > b){
-            let cach = a
-            a = b
-            b = cach
+            let cach = a;
+            a = b;
+            b = cach;
         }
-        return {a,b}
+        return {a,b};
     }
 
     __orderAndCheckIndex(a,b = undefined){
 
-        let length = this.textData.length
-        a = Math.abs(a)
+        let length = this.textData.length;
+        a = Math.abs(a);
         if(b === undefined)
-            b = length - 1
-        b = Math.abs(b)
+            b = length - 1;
+        b = Math.abs(b);
         if( a > b){
-            let cach = a
-            a = b
-            b = cach
+            let cach = a;
+            a = b;
+            b = cach;
         }
-        return {a,b}
+        return {a,b};
     }
     deleteFromTo(a,b){
-        let order = this.__orderAndCheckIndex(a,b)
-        start = order.a, end = order.b
+        let order = this.__orderAndCheckIndex(a,b);
+        start = order.a, end = order.b;
         if(start <= textData.length && end <= textData.length){
-            this.textData = textData.substring(0, start) + textData.substring(end)
-            return
+            this.textData = textData.substring(0, start) + textData.substring(end);
+            return;
         }
         else
-            throw new Error("a <= this._string.length && b <= this._string.length  is false")
+            throw new Error("a <= this._string.length && b <= this._string.length  is false");
         
     }
 
     highlightSetup(){
-        this._highlightMap = new Map()
+        this._highlightMap = new Map();
     }
     highlight(id, startIndex, endIndex, type = HIGHLIGHT_TAG.noTag){
-        let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex)
+        let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
 
     }
     
@@ -726,20 +767,20 @@ class _line{
 const INTERVAL_ARRAY = [
     [0,0], //interval 1
     [0,0], // interval 2
-]
+];
 function interval(intervalArray = INTERVAL_ARRAY){
-    let intervallMap = new Map()
+    let intervallMap = new Map();
     intervalArray.forEach((interval, index) => {
         if(intervallMap.has(interval[0]))
-            intervallMap.get(interval[0]).push(index)
+            intervallMap.get(interval[0]).push(index);
         else
-            intervallMap.set(interval[0], [index])
+            intervallMap.set(interval[0], [index]);
 
         if(intervallMap.has(interval[1]))
-            intervallMap.get(interval[1]).push(index)
+            intervallMap.get(interval[1]).push(index);
         else
-            intervallMap.set(interval[1], [index])
+            intervallMap.set(interval[1], [index]);
     })
-    return intervallMap
+    return intervallMap;
 }
 
