@@ -210,10 +210,10 @@ class _gd_sandbox_editor{
                 this._lineArray[selection.anchorNode.parentNode._line_number].wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue);
                 return;
             }
-            
+            debugger;
             if(selection.anchorNode.parentNode._line_number > selection.focusNode.parentNode._line_number){
-                this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset);
                 this._lineArray[selection.focusNode.parentNode._line_number].insertString(startPrintValue, selection.focusOffset);
+                this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset);
                 return;
             }
             this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset);
@@ -317,33 +317,32 @@ class _gd_sandbox_editor{
 
             if(this.selectionActive){
                 if(key.specialAction){
+                    keyboardEvent.preventDefault();
                     this._getSelector().deleteFromDocument();
                     key.specialFunction();
-                    keyboardEvent.preventDefault();
                     return;
-
                 }
                 if(key.wrapText){
-                    this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
                     keyboardEvent.preventDefault();
+                    this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
                     return;
                 }
                 if(key.printKey){
+                    keyboardEvent.preventDefault();
                     this._getSelector().deleteFromDocument();
                     this.__print(key.printValue);
-                    keyboardEvent.preventDefault();
                     return;
                 }
             }
             if(key.specialAction){
-                key.specialFunction();
                 keyboardEvent.preventDefault();
+                key.specialFunction();
                 return;
 
             }
             if(key.printKey){
-                this.__print(key.printValue);
                 keyboardEvent.preventDefault();
+                this.__print(key.printValue);
                 return;
             }
             

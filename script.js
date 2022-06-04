@@ -1,5 +1,7 @@
 'use strict';
 
+//KEEP IT SIMPLE
+
 document.onreadystatechange = function(){
     if(document.readyState === "complete"){
         main();
