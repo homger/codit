@@ -210,7 +210,7 @@ class _gd_sandbox_editor{
                 this._lineArray[selection.anchorNode.parentNode._line_number].wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue);
                 return;
             }
-            debugger;
+            //debugger;
             if(selection.anchorNode.parentNode._line_number > selection.focusNode.parentNode._line_number){
                 this._lineArray[selection.focusNode.parentNode._line_number].insertString(startPrintValue, selection.focusOffset);
                 this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset);
@@ -290,9 +290,9 @@ class _gd_sandbox_editor{
             wrapText: true, beforeWrapValue:"{", afterWrapValue:"}",
             cursorOffset: -1
         });
-        this.addKeyAction("(", {
-            printKey: true, printValue: "()",
-            wrapText: true, beforeWrapValue:"(", afterWrapValue:")",
+        this.addKeyAction("\"", {
+            printKey: true, printValue: "\"\"",
+            wrapText: true, beforeWrapValue:"\"", afterWrapValue:"\"",
             cursorOffset: -1
         });
         this.addKeyAction("(", {
@@ -368,18 +368,18 @@ class _gd_sandbox_editor{
     }
     insertLine(line = new _line(""), index = this.focusedLine){
         // alert(); 
-        
-        if(index < 0 || index > this.lineCount)
+        //debugger;
+        if(index < 0 || index >= this.lineCount)
             return false;
-        this._lineArray.splice(index, 0, line);
+        this._lineArray.splice(index + 1, 0, line);
         
-        line.setLineNumber(index);
+        line.setLineNumber(index + 1);
         this.reorderLines_startAt_index(index);
         if(index == this.lineCount){
             this._editor.append(line.uiElement);
         }
         else{
-            this._lineArray[index + 1].uiElement.insertAdjacentElement("afterend", line.uiElement);
+            this._lineArray[index].uiElement.insertAdjacentElement("afterend", line.uiElement);
         }
 
         this.setCursorPosition(line.uiElement, this.cursorIndex % line.textData.length);
