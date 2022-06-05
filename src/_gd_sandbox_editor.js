@@ -301,7 +301,7 @@ class _gd_sandbox_editor{
             cursorOffset: -1});
         //this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.insertLine});
-        this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
+        this.addKeyAction("___________Control", {specialAction: true, specialFunction: function(){
             this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
         }.bind(this)});
         
@@ -312,8 +312,13 @@ class _gd_sandbox_editor{
     }
     
     keyAction(keyboardEvent){
-        try {
+        
             let key = this.keyActionMap.get(keyboardEvent.key);
+            
+            if(key === undefined){
+                console.log(keyboardEvent.key);
+                return;
+            }
 
             if(this.selectionActive){
                 if(key.specialAction){
@@ -347,9 +352,7 @@ class _gd_sandbox_editor{
             }
             
             //alert(keyboardEvent.key);
-        } catch (error) {
-            console.log(error);
-        }
+
     }
 
 
@@ -471,12 +474,7 @@ class _gd_sandbox_editor{
 
     copyPastSetup(){
         this.copyBuffer = null;
-        this._editor.addEventListener("paste", function(pasteEvent){
-            let pasteData = pasteEvent.clipboardData.getData("text/plain");
-            console.log("paste DATA :" + pasteData.split(/\n/));
-            pasteEvent.preventDefault();
-            this.insertLine(new _line(pasteData));
-        });
+        this._editor.addEventListener("paste", this.pastFromPastEvent.bind(this));
     }
 
     copy(selection){
@@ -485,6 +483,12 @@ class _gd_sandbox_editor{
 
             }
         }
+    }
+    pastFromPastEvent(pasteEvent){
+        let pasteData = pasteEvent.clipboardData.getData("text/plain");
+        console.log("paste DATA :" + pasteData.split(/\n/));
+        pasteEvent.preventDefault();
+        this.insertLine(new _line(pasteData));
     }
     past(){
         
@@ -673,6 +677,7 @@ class _line{
         this.uiElement.innerHTML = newBrutContent;
         this.fixChildList();
     }
+    // can break the _line object
     insertBrutContent(brutString, index){
         let brutContent = this.brutContent;
         index = index % (this.brutContent.length + 1);
@@ -685,11 +690,14 @@ class _line{
 
     }
 
+    //Why did i write this?
+    // to-do
     fixChildList(){
+        this.childListFixedSet = [];
         console.log(this.uiElement.childNodes);
         if(this.uiElement.childNodes.length != 2){
             this.uiElement.childNodes.forEach(node => 
-                this.childListFixedSet.add(node.nodeName)
+                this.childListFixedSet.push(node.nodeName)
                 );
             //this.uiElement.innerHTML = this.uiElement.innerText + "<br>"
             ++this.fixedChildListFixedCount;
