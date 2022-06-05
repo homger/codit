@@ -99,6 +99,7 @@ class _gd_sandbox_editor{
     get focusedLine(){
 
         if(!this.singlelineSelectionActive){
+            debugger;
             let selection = this._getSelector();
             if(selection.isCollapsed)
                 return selection.anchorNode.parentNode._line_number;
@@ -106,6 +107,9 @@ class _gd_sandbox_editor{
 
         return undefined;
 
+    }
+    get anchorNodeIsEmpty(){
+        return !isNaN(selection.anchorNode._line_number) ? true : false;
     }
     
     selectionIsValid(selection){
