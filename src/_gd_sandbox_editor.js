@@ -99,10 +99,16 @@ class _gd_sandbox_editor{
     get focusedLine(){
 
         if(!this.singlelineSelectionActive){
-            debugger;
+            //debugger;
             let selection = this._getSelector();
-            if(selection.isCollapsed)
-                return selection.anchorNode.parentNode._line_number;
+            if(selection.isCollapsed){
+
+                //if(!isNaN(selection.anchorNode.parentNode._line_number))
+                    return selection.anchorNode.parentNode._line_number;
+                
+                return selection.anchorNode._line_number;
+            }
+                
         }
 
         return undefined;
@@ -111,7 +117,12 @@ class _gd_sandbox_editor{
     get anchorNodeIsEmpty(){
         return !isNaN(selection.anchorNode._line_number) ? true : false;
     }
-    
+    get lineFromSelection(){
+
+    }
+    get lineNumberFromSelection(){
+        let selection = this._getSelector();
+    }
     selectionIsValid(selection){
         //debugger
         //return this._lineMap.has(selection.anchorNode.parentNode) && this._lineMap.has(selection.focusNode.parentNode)
@@ -146,6 +157,7 @@ class _gd_sandbox_editor{
     setCursorPosition(node, index){
         this._getSelector().collapse(node, index);
     }
+
 
     get className(){
         return this._editor.className;
@@ -225,6 +237,28 @@ class _gd_sandbox_editor{
         }
         console.log();
     }
+    // FN NO DONE to-do
+    __wrapSelection_brut(selection, startPrintValue, endPrintValue){
+        console.log("Will wrap")
+        if(this.selectionIsValid(selection)){
+            let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset;
+            console.log("WRAP anchorOffset    :  " + anchorOffset);
+            console.log("WRAP focusOffset    :  " + focusOffset);
+            if(selection.anchorNode === selection.focusNode){
+                this._lineArray[selection.anchorNode.parentNode._line_number].wrapBrutContent(anchorOffset, startPrintValue, focusOffset, endPrintValue);
+                return;
+            }
+            //debugger;
+            if(selection.anchorNode.parentNode._line_number > selection.focusNode.parentNode._line_number){
+                this._lineArray[selection.focusNode.parentNode._line_number].insertString(startPrintValue, selection.focusOffset);
+                this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset);
+                return;
+            }
+            this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset);
+            this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset);
+        }
+        console.log();
+    }
     __print(printValue, index = this.anchorOffset, line = this.anchorNode.parentNode._line_number){
         console.log(line);
         this._lineArray[line].insertString(printValue,index);
@@ -271,6 +305,7 @@ class _gd_sandbox_editor{
     keyAction options = {
         printKey: true,
         printValue: "",
+        printBrut: false,
         cursorOffset: 0,
         specialAction: true,
         specialFunction: function(textArea){},
@@ -308,6 +343,10 @@ class _gd_sandbox_editor{
         this.addKeyAction("___________Control", {specialAction: true, specialFunction: function(){
             this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
         }.bind(this)});
+        this.addKeyAction("²", {
+            printKey: true, printValue: "<special></special>", printBrut: true,
+            wrapText: true, beforeWrapValue:"<special>", afterWrapValue:"</special>",
+            cursorOffset: -1});
         
 
     }
@@ -333,11 +372,18 @@ class _gd_sandbox_editor{
                 }
                 if(key.wrapText){
                     keyboardEvent.preventDefault();
-                    this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
+                    if(key.printBrut){
+                        
+                    }
+                    this.__wrapSelection_brut(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
                     return;
                 }
                 if(key.printKey){
                     keyboardEvent.preventDefault();
+                    if(key.printBrut){
+
+                    }
+
                     this._getSelector().deleteFromDocument();
                     this.__print(key.printValue);
                     return;
@@ -378,6 +424,13 @@ class _gd_sandbox_editor{
         //debugger;
         if(index < 0 || index >= this.lineCount)
             return false;
+        //debugger;
+        if(this._lineArray[index].textData == ""){
+
+
+
+            return true;
+        }
         this._lineArray.splice(index + 1, 0, line);
         
         line.setLineNumber(index + 1);
@@ -492,7 +545,8 @@ class _gd_sandbox_editor{
         let pasteData = pasteEvent.clipboardData.getData("text/plain");
         console.log("paste DATA :" + pasteData.split(/\n/));
         pasteEvent.preventDefault();
-        this.insertLine(new _line(pasteData));
+        pasteData.split(/\n/).forEach(string => this.insertLine( new _line(string)));
+        //this.insertLine(new _line(pasteData));
     }
     past(){
         
@@ -597,6 +651,14 @@ const HIGHLIGHT_TAG = {
         totalLength: 9,
         used: true,
     },
+    special: {
+        start: "<special>",
+        end: "</special>",
+        startLength: 9,
+        endLength: 10,
+        totalLength: 19,
+        used: true,
+    },
 }
 
 class _line{
@@ -629,6 +691,7 @@ class _line{
         this.uiElement.innerHTML = "";
         this.uiElement.appendChild(document.createTextNode(text ))*/
         //this.uiElement.appendChild(document.createElement("br"))
+
         this.uiElement.innerText = text;
         this.fixChildList();
     }
@@ -719,7 +782,7 @@ class _line{
          let brutContent = this.brutContent;
          let orderedIndex = this._brut__orderAndCheckIndex(startIndex, endIndex);
          startIndex = orderedIndex.a, endIndex = orderedIndex.b;
-         this.brutContent = brutContent.substring(0, startIndex) + startContent + brutContent.substring(startIndex, endIndex) + endContent + textData.brutContent(endIndex);
+         this.brutContent = brutContent.substring(0, startIndex) + startContent + brutContent.substring(startIndex, endIndex) + endContent + brutContent.substring(endIndex);
 
     }
     
@@ -775,6 +838,10 @@ class _line{
     
 }
 
+/* interval = {
+        start: Number,
+        end: Number,
+}*/
 const INTERVAL_ARRAY = [
     [0,0], //interval 1
     [0,0], // interval 2
@@ -794,4 +861,15 @@ function interval(intervalArray = INTERVAL_ARRAY){
     })
     return intervallMap;
 }
+
+function interval_has_intersection(interval1, interval2){
+    if(interval1.end >= interval2.start)
+        return true;
+    if(interval2.end >= interval.start)
+        return true;
+    
+    return false;
+}
+
+
 
