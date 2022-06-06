@@ -674,6 +674,7 @@ class _line{
 
         //***to-do for mutiline textwrap */
         this.highlightSetup();
+        this.basicTextData = "";
         this.textData = initialStringValue;
         this.uiElement.appendChild(document.createElement("br"));
         
@@ -801,14 +802,18 @@ class _line{
         }
         return {a,b};
     }
-
-    __orderAndCheckIndex(a,b = undefined){
+    //to-do solution if a is negative other than error
+    __orderAndCheckIndex(a = -1, b = -1){
 
         let length = this.textData.length;
-        a = Math.abs(a);
+        /*a = Math.abs(a);
         if(b === undefined)
             b = length - 1;
-        b = Math.abs(b);
+        b = Math.abs(b);*/
+        if(a < 0 || b < 0 || a >= length || b >= length){
+            throw new Error("provided index are invalid:  " + a + " < 0 || " + b + " < 0 || " + a + " >= " + length + " || " + b + " >= " + length);
+            
+        }
         if( a > b){
             let cach = a;
             a = b;
@@ -862,14 +867,7 @@ function interval(intervalArray = INTERVAL_ARRAY){
     return intervallMap;
 }
 
-function interval_has_intersection(interval1, interval2){
-    if(interval1.end >= interval2.start)
-        return true;
-    if(interval2.end >= interval.start)
-        return true;
-    
-    return false;
-}
+
 
 
 

@@ -12,11 +12,29 @@ class _gd_interval{
         }
     }
 
-    intersect_with(interval = _gd_interval){
+    has_intersection_with(interval){
         
-    if(interval.end >= thisthis.start)
-        return true;
-    if(interval2.end >= interval.start)
-        return true;
+        if(interval.start <= this.start && this.start <= interval.end || this.start <= interval.start && interval.start <= this.end)
+            return true;
+        
+        return false;
+    }
+
+    combine_interval(interval){
+        if(interval.start < this.start)
+            this.start = interval.start;
+        
+        if(interval.end > this.end)
+            this.end = interval.end;
+    }
+    
+    intersect_interval(interval){
+        if(this.has_intersection_with(interval)){
+            if(interval.start > this.start)
+                this.start = interval.start;
+            
+            if(interval.end < this.end)
+                this.end = interval.end;
+        }
     }
 }
