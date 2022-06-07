@@ -543,10 +543,14 @@ class _gd_sandbox_editor{
     }
     pastFromPastEvent(pasteEvent){
         let pasteData = pasteEvent.clipboardData.getData("text/plain");
-        console.log("paste DATA :" + pasteData.split(/\n/));
+        console.log("paste DATA :" + this.split_string_by_line_break(pasteData));
         pasteEvent.preventDefault();
-        pasteData.split(/\n/).forEach(string => this.insertLine( new _line(string)));
+        this.split_string_by_line_break(pasteData).forEach(string => this.insertLine( new _line(string)));
         //this.insertLine(new _line(pasteData));
+    }
+    split_string_by_line_break(string){
+
+        return string.split(/\n|\r|\r\n/);
     }
     past(){
         
@@ -662,7 +666,7 @@ const HIGHLIGHT_TAG = {
 }
 
 class _line{
-    constructor(initialStringValue){
+    constructor(initialStringValue = ""){
         
         this.uiElement = document.createElement("div");
         
@@ -674,8 +678,8 @@ class _line{
 
         //***to-do for mutiline textwrap */
         this.highlightSetup();
-        this.basicTextData = "";
-        this.textData = initialStringValue;
+        this.basicTextData = initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
+        //this.textData = initialStringValue;
         this.uiElement.appendChild(document.createElement("br"));
         
         //this.updateUi()
@@ -695,6 +699,13 @@ class _line{
 
         this.uiElement.innerText = text;
         this.fixChildList();
+    }
+    inputKey(key){
+        if(key == "\n" || key == "\r" || key == "\r\n"){
+
+        }
+        this.basicTextData += key.match(/./);
+         
     }
     get textData(){
         return this.uiElement.innerText;
@@ -847,6 +858,8 @@ class _line{
         start: Number,
         end: Number,
 }*/
+/*const VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\p{Lu}|\p{Ll}/
+const NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\P{Lu}|\P{Ll}/*/
 const INTERVAL_ARRAY = [
     [0,0], //interval 1
     [0,0], // interval 2
