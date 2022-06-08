@@ -858,8 +858,8 @@ class _line{
         start: Number,
         end: Number,
 }*/
-/*const VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\p{Lu}|\p{Ll}/
-const NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\P{Lu}|\P{Ll}/*/
+const VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\p{L}|\p{S}|\p{M}|\p{N}|\p{P|\p{Zs}}/u;
+//const NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\P{L}|\P{Ll}/u;
 const INTERVAL_ARRAY = [
     [0,0], //interval 1
     [0,0], // interval 2
