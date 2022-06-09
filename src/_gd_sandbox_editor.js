@@ -262,6 +262,7 @@ class _gd_sandbox_editor{
     __print(printValue, index = this.anchorOffset, line = this.anchorNode.parentNode._line_number){
         console.log(line);
         this._lineArray[line].insertString(printValue,index);
+        
         /*
         const {anchorOffset, focusOffset} = this.anchor_focus_offset;
         let value = this._editor.textContent;
@@ -358,6 +359,13 @@ class _gd_sandbox_editor{
         
             let key = this.keyActionMap.get(keyboardEvent.key);
             
+            if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
+                keyboardEvent.preventDefault();
+                this.__print(keyboardEvent.key);
+                console.log("to basic data:  " + keyboardEvent.key);
+                return;
+            }
+            
             if(key === undefined){
                 console.log(keyboardEvent.key);
                 return;
@@ -400,7 +408,6 @@ class _gd_sandbox_editor{
                 this.__print(key.printValue);
                 return;
             }
-            
             //alert(keyboardEvent.key);
 
     }
@@ -701,9 +708,9 @@ class _line{
         this.fixChildList();
     }
     inputKey(key){
-        if(key == "\n" || key == "\r" || key == "\r\n"){
+        /*if(key == "\n" || key == "\r" || key == "\r\n"){
 
-        }
+        }*/
         this.basicTextData += key.match(/./);
          
     }
@@ -730,11 +737,24 @@ class _line{
     }
     
     insertString(string, index){
-        let textData = this.textData;
+        /*let textData = this.textData;
         index = index % (this.textData.length + 1);
 
         this.textData = textData.substring(0, index) + string + textData.substring(index);
+        this.fixChildList();*/
+
+        let basicTextData = this.basicTextData;
+        index = index % (this.basicTextData.length + 1);
+
+        this.basicTextData = basicTextData.substring(0, index) + string + basicTextData.substring(index);
         this.fixChildList();
+        this.recomputeUiElement();
+        return this.uiElement;
+    }
+    recomputeUiElement(){
+
+
+        this.uiElement.innerText = this.basicTextData;
     }
     wrapText(startIndex, startString, endIndex, endString){
         /**
@@ -772,7 +792,7 @@ class _line{
     //Why did i write this?
     // to-do
     fixChildList(){
-        this.childListFixedSet = [];
+        /*this.childListFixedSet = [];
         console.log(this.uiElement.childNodes);
         if(this.uiElement.childNodes.length != 2){
             this.uiElement.childNodes.forEach(node => 
@@ -782,7 +802,7 @@ class _line{
             ++this.fixedChildListFixedCount;
             console.log(this.fixedChildListFixedCount);
             console.log(this.childListPresentSet);
-        }
+        }*/
 
     }
     wrapBrutContent(startIndex, startContent, endIndex, endContent){
@@ -858,8 +878,8 @@ class _line{
         start: Number,
         end: Number,
 }*/
-const VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\p{L}|\p{S}|\p{M}|\p{N}|\p{P|\p{Zs}}/u;
-//const NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\P{L}|\P{Ll}/u;
+const VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\p{S}|\p{M}|\p{N}|\p{P}|\p{Zs}/u;
+const NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\P{L}|\P{Ll}/ug;
 const INTERVAL_ARRAY = [
     [0,0], //interval 1
     [0,0], // interval 2
