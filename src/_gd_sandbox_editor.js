@@ -1,5 +1,15 @@
 'use strict';
 
+const vrCursor = {
+    line : 0,
+    index : 0,
+    reset : function(){
+        this.line = 0;
+        this.index = 0;
+    },
+}
+
+
 //@GDn&p+gbg
 class _gd_sandbox_editor{
     constructor(){
@@ -8,6 +18,7 @@ class _gd_sandbox_editor{
         this._editor = document.createElement("pre");
         this._editor.className = "editor";
         this._editor.contentEditable = true;
+        vrCursor.reset();
         
         this.keyAction = this.keyAction.bind(this);
 
@@ -16,6 +27,8 @@ class _gd_sandbox_editor{
         this.lineCount = 0;
         this.newLine = this.newLine.bind(this);
         this.insertLine = this.insertLine.bind(this);
+
+        this.focusedLine = -1;
         
         this.copyPastSetup();
         this.keyActionSetup();
@@ -32,10 +45,14 @@ class _gd_sandbox_editor{
         this._editor.addEventListener("focusout", this.focus.bind(this));
 
         this.uiElement = this._editor;
+
     }
     focus(){
-        if(this.lineCount == 0)
+        if(this.lineCount == 0){
             this.newLine();
+            this.focusedLine = 0;
+        }
+
         this.hasFocus = true;
     }
     focusout(){
@@ -114,6 +131,9 @@ class _gd_sandbox_editor{
         return undefined;
 
     }
+    set focusedLine(index){
+        this.setCursorPosition(this._lineArray[index], 0);
+    }
     get anchorNodeIsEmpty(){
         return !isNaN(selection.anchorNode._line_number) ? true : false;
     }
@@ -155,7 +175,12 @@ class _gd_sandbox_editor{
     }
 
     setCursorPosition(node, index){
-        this._getSelector().collapse(node, index);
+        let selector = this._getSelector();
+        console.log("selector   :   "   +  selector);
+        if(selector)
+            selector.collapse(node, index);
+        else
+            console.error("SELECTOR :  " + selector);
     }
 
 
@@ -259,9 +284,14 @@ class _gd_sandbox_editor{
         }
         console.log();
     }
-    __print(printValue, index = this.anchorOffset, line = this.anchorNode.parentNode._line_number){
+    __print(printValue, index = vrCursor.index, line = vrCursor.line){
         console.log(line);
+        if(line === undefined){
+            line = this.anchorNode._line_number;
+        }
         this._lineArray[line].insertString(printValue,index);
+        ++vrCursor.index;
+        this.setCursorPosition(this._lineArray[line].uiElement, index);
         
         /*
         const {anchorOffset, focusOffset} = this.anchor_focus_offset;
@@ -365,10 +395,9 @@ class _gd_sandbox_editor{
                 console.log("to basic data:  " + keyboardEvent.key);
                 return;
             }
-            
-            if(key === undefined){
-                console.log(keyboardEvent.key);
-                return;
+            else{
+                //keyboardEvent.preventDefault();
+                //return;
             }
 
             if(this.selectionActive){
@@ -408,6 +437,12 @@ class _gd_sandbox_editor{
                 this.__print(key.printValue);
                 return;
             }
+            
+            if(key === undefined){
+                console.log(keyboardEvent.key);
+                keyboardEvent.preventDefault();
+                return;
+            }
             //alert(keyboardEvent.key);
 
     }
@@ -426,6 +461,7 @@ class _gd_sandbox_editor{
         console.log(this.lineCount);
         //this.updateUi();
     }
+    
     insertLine(line = new _line(""), index = this.focusedLine){
         // alert(); 
         //debugger;
@@ -687,6 +723,7 @@ class _line{
         this.highlightSetup();
         this.basicTextData = initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
         //this.textData = initialStringValue;
+        this.uiElement.appendChild(document.createTextNode(""));
         this.uiElement.appendChild(document.createElement("br"));
         
         //this.updateUi()
@@ -754,7 +791,7 @@ class _line{
     recomputeUiElement(){
 
 
-        this.uiElement.innerText = this.basicTextData;
+        this.uiElement.innerHTML = this.basicTextData;
     }
     wrapText(startIndex, startString, endIndex, endString){
         /**
@@ -899,6 +936,8 @@ function interval(intervalArray = INTERVAL_ARRAY){
     })
     return intervallMap;
 }
+
+
 
 
 
