@@ -11,6 +11,7 @@ class _gd_interval{
             this.start = end;
             this.end = start;
         }
+        this.id = "" + start + "" + end;
     }
 
     has_intersection_with(interval){
@@ -36,6 +37,7 @@ class _gd_interval{
             this.end = interval.end;
     }
     
+    //change the calling interval
     //make this interal into a intersection of itself and the interval passed as argument
     intersect_interval(interval){
         if(this.has_intersection_with(interval)){
@@ -48,7 +50,7 @@ class _gd_interval{
     }
 
     //returns the interval in witch this interval intersect with the passed interval or undefined if there is no intersection
-    intersection_interval(interval){
+    get_intersection_interval(interval){
         if(this.has_intersection_with(interval)){
             let start = this.start;
             let end = this.end;
@@ -68,7 +70,12 @@ class _gd_interval{
     
     
     //Intervals should be ordered by their start value.
-    nested_interval_range_from_interval_list(intervalArray){
+    nested_interval_range_from_interval_list(intervalArray = _2_test_inntervalArray){
+        let nested_Interval_Array = [];
+        intervalArray.forEach((interval, index, intervalArray) => {
+            nested_Interval_Array.push([]);
+            nested_Interval_Array[index] = [interval.start,[]];
+        });
 
     }
     //CHECKS FIRST AND TRHOWS ERROR IF NOT ORDERED as asked
