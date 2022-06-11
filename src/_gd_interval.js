@@ -11,7 +11,7 @@ class _gd_interval{
             this.start = end;
             this.end = start;
         }
-        this.id = "" + start + "" + end;
+        this.id = null;
     }
 
     has_intersection_with(interval){
@@ -70,13 +70,82 @@ class _gd_interval{
     
     
     //Intervals should be ordered by their start value.
-    nested_interval_range_from_interval_list(intervalArray = _2_test_inntervalArray){
+    //
+    static nested_interval_range_from_interval_list(intervalArray = _2_test_inntervalArray){
         let nested_Interval_Array = [];
-        intervalArray.forEach((interval, index, intervalArray) => {
-            nested_Interval_Array.push([]);
-            nested_Interval_Array[index] = [interval.start,[]];
+        let nested_Interval_Map = new Map();
+        let intervalArray_length = intervalArray.length;
+        let openCloseArray = [];
+
+        /*let min = intervalArray[0].start;
+        let max; intervalArray.forEach((interval, index) => {
+            if(index = 0) 
+                max = interval.end;
+            if(max < interval.end)
+                max = interval.end;
+        });*/
+        for(let i = 0; i < intervalArray_length; ++i){
+        }
+        intervalArray.forEach((interval, index) => {
+            interval.id = index;
+            openCloseArray.push([false, interval.id]);
+            if(nested_Interval_Map.has(intervalArray[index].start)){
+                nested_Interval_Map.get(intervalArray[index].start).push(interval.id);
+            }
+            else{
+                nested_Interval_Map.set(intervalArray[index].start, [interval.id]);
+            }
+
+            if(nested_Interval_Map.has(intervalArray[index].end)){
+                nested_Interval_Map.get(intervalArray[index].end).push(interval.id);
+            }
+            else{
+                nested_Interval_Map.set(intervalArray[index].end, [interval.id]);
+            }
+
+        });
+        
+        nested_Interval_Map.forEach((idArray, key) => {
+
+            let open_close_action_array = [];
+            idArray.forEach(id => {
+                console.log("id : " + id);
+                if(!openCloseArray[id][0]){
+                    openCloseArray[id][0] = true;
+                    open_close_action_array.push(id);
+                }
+                else{
+                    openCloseArray[id][0] = false;
+                    open_close_action_array.push(id);
+                }
+            });
+
+            nested_Interval_Array.push([key,open_close_action_array]);
         });
 
+        /*let sorted_by_keys_nested_Interval_Map = nested_Interval_Map.keys();
+        
+        sorted_by_keys_nested_Interval_Map.sort().forEach(key => {
+            let idArray = nested_Interval_Map.get(key);
+
+            let open_close_action_array = [];
+            idArray.forEach(id => {
+                console.log("id : " + id);
+                if(!openCloseArray[id][0]){
+                    openCloseArray[id][0] = true;
+                    open_close_action_array.push(id);
+                }
+                else{
+                    openCloseArray[id][0] = false;
+                    open_close_action_array.push(id);
+                }
+            });
+
+            nested_Interval_Array.push([key,open_close_action_array]);
+
+        });*/
+
+        return nested_Interval_Array;
     }
     //CHECKS FIRST AND TRHOWS ERROR IF NOT ORDERED as asked
     nested_interval_range_from_interval_list_CHECK(intervalArray){
