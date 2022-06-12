@@ -70,25 +70,20 @@ class _gd_interval{
     
     
     //Intervals should be ordered by their start value.
-    //
-    static nested_interval_range_from_interval_list(intervalArray = _2_test_inntervalArray){
+    //Intervals id should be unique...
+    static nested_interval_range_from_interval_list(intervalArray){
         let nested_Interval_Array = [];
         let nested_Interval_Map = new Map();
-        let intervalArray_length = intervalArray.length;
-        //let openCloseArray = [];
-        let openCloseArray = new Map();
-        let autoStackArray = new First_In_First_Out_Stack();
-        let transferAuTostack = new First_In_First_Out_Stack();
+        
 
-        /*let min = intervalArray[0].start;
-        let max; intervalArray.forEach((interval, index) => {
-            if(index = 0) 
-                max = interval.end;
-            if(max < interval.end)
-                max = interval.end;
-        });*/
-        for(let i = 0; i < intervalArray_length; ++i){
-        }
+        //let openCloseArray = [];
+        let openCloseArray = new Map(); // SWITCH TO MAP SO INTERVAL ID CAN BE "ANYTHING"
+
+
+
+        // sets interval id since i don't bother seting it for now
+        // " nested_Interval_Map " gcollects each point where there is an interval start or end. 
+        // Groups together interval ID's that have a start or end or either at the same point.
         intervalArray.forEach((interval, index) => {
             interval.id = index + 1;
             //openCloseArray.push([false, interval.id]);
@@ -108,7 +103,8 @@ class _gd_interval{
             }
 
         });
-        
+        // sorted_by_keys_nested_Interval_Array what the name says. 
+        // The keys are Equal to each point of the interval range where there is an start, end or both.
         let sorted_by_keys_nested_Interval_Array = Array.from(nested_Interval_Map).sort(function(a,b){
             if(a[0] < b[0]){
                 return -1;
@@ -119,28 +115,21 @@ class _gd_interval{
             return 0;
         });
 
-        /*nested_Interval_Map.forEach((idArray, key) => {
 
-            let open_close_action_array = [];
-            idArray.forEach(id => {
-                console.log("id : " + id);
-                if(!openCloseArray[id][0]){
-                    openCloseArray[id][0] = true;
-                    open_close_action_array.push(id);
-                }
-                else{
-                    openCloseArray[id][0] = false;
-                    open_close_action_array.push(id);
-                }
-            });
+        
+        let autoStackArray = new First_In_First_Out_Stack(); 
+        let transferAuTostack = new First_In_First_Out_Stack();
 
-            nested_Interval_Array.push([key,open_close_action_array]);
-        });*/
-
+        //huh..
+        //comment inside..
         sorted_by_keys_nested_Interval_Array.forEach((changeIntervalPoint, index) => {
             
             let open_action_array = [];
-            let close_action_array = [];            
+            let close_action_array = [];
+
+            //1. for each point of change i find out if there is a start.
+            //2. if there is a closure i transfer every interval id up-to and including the id of the interval to be closed from autoStackArray to transferAuTostack.
+            //2.1 if the... will make myself a readme
             changeIntervalPoint[1].forEach(intervalId => {
 
                 if(openCloseArray.get(intervalId)[0] === false){
@@ -150,8 +139,6 @@ class _gd_interval{
                 }
                 else if(openCloseArray.get(intervalId)[0] === true){
                     openCloseArray.get(intervalId)[0] = false;
-                    
-                    //transferAuTostack.transferAll(autoStackArray);
                     if(autoStackArray.has(intervalId)){
 
                         autoStackArray.transferUntilValueFound(intervalId, transferAuTostack);
@@ -167,24 +154,13 @@ class _gd_interval{
 
             let open_close_action_array = [];
             let reopen_action_array = [];
-            /*let idCach = transferAuTostack.remove();
-            while(idCach !== undefined){
-                open_close_action_array.push(idCach);
-                if(openCloseArray[idCach][0]){
-                    autoStackArray.add(idCach);
-                    reopen_action_array.push(idCach);
-                }
-                idCach = transferAuTostack.remove();
-            }*/
+
             console.log("Stack array :  " + autoStackArray.stackArray);
             transferAuTostack.foreEach((id) => {
                 
                 open_close_action_array.push(id);
-                /*if(openCloseArray[id][0]){
-                    autoStackArray.add(id);
-                    reopen_action_array.push(id);
-                }*/
             });
+
             transferAuTostack.foreEach_REVERSE(id => {
                 transferAuTostack.remove();
                 if(openCloseArray.get(id)[0]){
@@ -195,34 +171,19 @@ class _gd_interval{
 
             
             nested_Interval_Array.push([changeIntervalPoint[0], open_close_action_array.concat(reopen_action_array, open_action_array)]);
-        });
-        /*let sorted_by_keys_nested_Interval_Map = nested_Interval_Map.keys();
-        
-        sorted_by_keys_nested_Interval_Map.sort().forEach(key => {
-            let idArray = nested_Interval_Map.get(key);
-
-            let open_close_action_array = [];
-            idArray.forEach(id => {
-                console.log("id : " + id);
-                if(!openCloseArray[id][0]){
-                    openCloseArray[id][0] = true;
-                    open_close_action_array.push(id);
-                }
-                else{
-                    openCloseArray[id][0] = false;
-                    open_close_action_array.push(id);
-                }
-            });
-
-            nested_Interval_Array.push([key,open_close_action_array]);
-
-        });*/
-
+        });        
         return nested_Interval_Array;
     }
     //CHECKS FIRST AND TRHOWS ERROR IF NOT ORDERED as asked
-    nested_interval_range_from_interval_list_CHECK(intervalArray){
-
+    static nested_interval_range_from_interval_list_CHECK(intervalArray){
+        intervalArray.forEach((value, index) => {
+            if(index > 0){
+                if(value.start < intervalArray[index - 1])
+                    throw new Error("intervalArray is not ordered by interval start value");
+            }
+        });
+        
+        return nested_interval_range_from_interval_list(intervalArray);
     }
     
 }
