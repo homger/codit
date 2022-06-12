@@ -71,7 +71,7 @@ class _gd_interval{
     
     //Intervals should be ordered by their start value.
     //Intervals id should be unique...
-    static nested_interval_range_from_interval_list(intervalArray){
+    static nested_interval_range_from_interval_list(intervalArray = unordered__2_test_inntervalArray){
         let nested_Interval_Array = [];
         let nested_Interval_Map = new Map();
         
@@ -210,6 +210,7 @@ const _1_test_inntervalArray_result_after_nested___ = [
 ];
 
 const _2_test_inntervalArray = [new _gd_interval(0,25), new _gd_interval(5,15), new _gd_interval(7,22), new _gd_interval(11,14),];
+const unordered__2_test_inntervalArray = [ new _gd_interval(11,14), new _gd_interval(5,15), new _gd_interval(0,25), new _gd_interval(7,22),];
 const _2_test_inntervalArray_result_after_nested___ = [
     [0,[1]],
     [5,[1,1,2]],
