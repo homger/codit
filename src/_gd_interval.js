@@ -75,7 +75,10 @@ class _gd_interval{
         let nested_Interval_Array = [];
         let nested_Interval_Map = new Map();
         let intervalArray_length = intervalArray.length;
-        let openCloseArray = [];
+        //let openCloseArray = [];
+        let openCloseArray = new Map();
+        let autoStackArray = new First_In_First_Out_Stack();
+        let transferAuTostack = new First_In_First_Out_Stack();
 
         /*let min = intervalArray[0].start;
         let max; intervalArray.forEach((interval, index) => {
@@ -87,8 +90,9 @@ class _gd_interval{
         for(let i = 0; i < intervalArray_length; ++i){
         }
         intervalArray.forEach((interval, index) => {
-            interval.id = index;
-            openCloseArray.push([false, interval.id]);
+            interval.id = index + 1;
+            //openCloseArray.push([false, interval.id]);
+            openCloseArray.set(interval.id, [false, interval.id]);
             if(nested_Interval_Map.has(intervalArray[index].start)){
                 nested_Interval_Map.get(intervalArray[index].start).push(interval.id);
             }
@@ -105,7 +109,17 @@ class _gd_interval{
 
         });
         
-        nested_Interval_Map.forEach((idArray, key) => {
+        let sorted_by_keys_nested_Interval_Array = Array.from(nested_Interval_Map).sort(function(a,b){
+            if(a[0] < b[0]){
+                return -1;
+            }
+            if(a[0] > b[0]){
+                return 1;
+            }
+            return 0;
+        });
+
+        /*nested_Interval_Map.forEach((idArray, key) => {
 
             let open_close_action_array = [];
             idArray.forEach(id => {
@@ -121,8 +135,67 @@ class _gd_interval{
             });
 
             nested_Interval_Array.push([key,open_close_action_array]);
-        });
+        });*/
 
+        sorted_by_keys_nested_Interval_Array.forEach((changeIntervalPoint, index) => {
+            
+            let open_action_array = [];
+            let close_action_array = [];            
+            changeIntervalPoint[1].forEach(intervalId => {
+
+                if(openCloseArray.get(intervalId)[0] === false){
+                    openCloseArray.get(intervalId)[0] = true;
+                    autoStackArray.add(intervalId);
+                    open_action_array.push(intervalId);
+                }
+                else if(openCloseArray.get(intervalId)[0] === true){
+                    openCloseArray.get(intervalId)[0] = false;
+                    
+                    //transferAuTostack.transferAll(autoStackArray);
+                    if(autoStackArray.has(intervalId)){
+
+                        autoStackArray.transferUntilValueFound(intervalId, transferAuTostack);
+                        transferAuTostack.add(autoStackArray.remove());
+                        
+                    }
+                    
+                }
+                else{
+                    throw new Error("Wrong data : openCloseArray[intervalId]   : "  +  openCloseArray.get(intervalId)[0]);
+                }
+            });
+
+            let open_close_action_array = [];
+            let reopen_action_array = [];
+            /*let idCach = transferAuTostack.remove();
+            while(idCach !== undefined){
+                open_close_action_array.push(idCach);
+                if(openCloseArray[idCach][0]){
+                    autoStackArray.add(idCach);
+                    reopen_action_array.push(idCach);
+                }
+                idCach = transferAuTostack.remove();
+            }*/
+            console.log("Stack array :  " + autoStackArray.stackArray);
+            transferAuTostack.foreEach((id) => {
+                
+                open_close_action_array.push(id);
+                /*if(openCloseArray[id][0]){
+                    autoStackArray.add(id);
+                    reopen_action_array.push(id);
+                }*/
+            });
+            transferAuTostack.foreEach_REVERSE(id => {
+                transferAuTostack.remove();
+                if(openCloseArray.get(id)[0]){
+                    autoStackArray.add(id);
+                    reopen_action_array.push(id);
+                }
+            });
+
+            
+            nested_Interval_Array.push([changeIntervalPoint[0], open_close_action_array.concat(reopen_action_array, open_action_array)]);
+        });
         /*let sorted_by_keys_nested_Interval_Map = nested_Interval_Map.keys();
         
         sorted_by_keys_nested_Interval_Map.sort().forEach(key => {
@@ -196,3 +269,78 @@ const _2_slim_test_inntervalArray_result_after_nested___ = [
     [22,[3]],
     [25,[1]],
 ];
+
+
+
+
+//FOR _gs_interval
+// THE
+class First_In_First_Out_Stack{
+    constructor(){
+        this.stackArray = [];
+        this.length = 0;
+    }
+    foreEach_REVERSE(callBack){
+        let i = this.length - 1;
+        while(i >= 0){
+            callBack(this.stackArray[i], i, this.stackArray);
+            --i;
+        }
+    }
+    foreEach(callBack){
+        let i = 0;
+        while(i < this.length){
+            callBack(this.stackArray[i], i, this.stackArray);
+            ++i;
+        }
+    }
+    has(value){
+        return this.stackArray.includes(value);
+    }
+    // Wil NOT add undefined as a value 
+    add (value){
+        if(value === undefined)
+            return;
+        this.stackArray.push(value);
+        ++this.length;
+    }
+    remove (){
+        if(this.length === 0){
+            return undefined;
+        }
+        --this.length;
+        return this.stackArray.pop();
+    }
+    viewTop (){
+        return this.stackArray[this.length - 1];
+    }
+    //does not transfer value
+    transferUntilValueFound (value, First_In_First_Out_Stack_Object, callBackFunction = undefined){
+
+        if(callBackFunction !== undefined){
+            while(this.viewTop() !== value && this.length > 0){
+                callBackFunction(this);
+                First_In_First_Out_Stack_Object.add(this.remove());
+            }
+        }
+        else{
+            while(this.viewTop() !== value && this.length > 0){
+                First_In_First_Out_Stack_Object.add(this.remove());
+            }
+        }
+    }
+    transferAll (First_In_First_Out_Stack_Object,  callBackFunction = undefined){
+        if(callBackFunction !== undefined){
+            while(this.length > 0){
+                callBackFunction(this);
+                First_In_First_Out_Stack_Object.add(this.remove());
+            }
+        }
+        else{
+            while(this.length > 0){
+                First_In_First_Out_Stack_Object.add(this.remove());
+            }
+        }
+    }
+    
+}
