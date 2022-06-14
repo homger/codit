@@ -10,9 +10,11 @@ const vrCursor = {
     updateFrom : function(from){
         switch(from){
             case "anchor_selection":
-                currentSelection = window.getSelection();
-                this.line = !isNaN(currentSelection.anchorNode.data._line_number)?  currentSelection.anchorNode.data._line_number : this.line;
+                let currentSelection = window.getSelection();
+                let valid_anchor = getValidParent(currentSelection.anchorNode);
+                this.line = !isNaN(valid_anchor.dataset._line_number)?  valid_anchor.dataset._line_number : this.line;
                 this.index = currentSelection.anchorOffset;
+                console.log("line :  " + this.line + "       index :  " + this.index);
             default: return;
         }
     },
@@ -130,7 +132,7 @@ class _gd_sandbox_editor{
             if(selection.isCollapsed){
 
                 //if(!isNaN(selection.anchorNode.parentNode._line_number))
-                    return selection.anchorNode.parentNode._line_number;
+                    return getValidParent(selection.anchorNode).dataset._line_number;
                 
                 return selection.anchorNode._line_number;
             }
@@ -144,7 +146,7 @@ class _gd_sandbox_editor{
         this.setCursorPosition(this._lineArray[index], 0);
     }
     get anchorNodeIsEmpty(){
-        return !isNaN(selection.anchorNode._line_number) ? true : false;
+        return !isNaN(getValidParent(selection.anchorNode).dataset._line_number) ? true : false;
     }
     get lineFromSelection(){
 
@@ -719,6 +721,7 @@ class _line{
         this.uiElement = document.createElement("div");
         
         this.uiElement.className = "_line";
+        this.uiElement.dataset._gdm = true;
 
         
         this.uiElement._gd_line = this;
@@ -739,6 +742,8 @@ class _line{
         return this.basicTextData.length;
     }
     setLineNumber(lineNumber){
+        
+        this.uiElement.dataset._line_number = lineNumber;
         this.uiElement._line_number = lineNumber;
         this._line_number = lineNumber;
     }
@@ -799,7 +804,8 @@ class _line{
     }
     recomputeUiElement(){
 
-
+        let text = this.filledTextNode(this.textData);
+        text.dataset._line_number = this._line_number;
         this.uiElement.innerHTML = this.basicTextData;
     }
     wrapText(startIndex, startString, endIndex, endString){
@@ -814,6 +820,9 @@ class _line{
          this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex);
          this.fixChildList();
 
+    }
+    filledTextNode(text){
+        return document.createTextNode(text);
     }
     get brutContent(){
         return this.uiElement.innerHTML;
@@ -919,6 +928,24 @@ class _line{
 
     }
     
+}
+
+function getValidParent(node){
+    if(node.dataset){
+        if(node.dataset._gdm){
+            return node;
+        }
+    }
+    node = node.parentNode;
+    let i = 10;
+    while(i > 0){
+        if(node.dataset){
+            if(node.dataset._gdm){
+                return node;
+            }
+        }
+        --i;
+    }
 }
 
 /* interval = {
