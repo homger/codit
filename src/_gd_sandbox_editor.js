@@ -7,6 +7,15 @@ const vrCursor = {
         this.line = 0;
         this.index = 0;
     },
+    updateFrom : function(from){
+        switch(from){
+            case "anchor_selection":
+                currentSelection = window.getSelection();
+                this.line = !isNaN(currentSelection.anchorNode.data._line_number)?  currentSelection.anchorNode.data._line_number : this.line;
+                this.index = currentSelection.anchorOffset;
+            default: return;
+        }
+    },
 }
 
 
@@ -395,10 +404,12 @@ class _gd_sandbox_editor{
                 console.log("to basic data:  " + keyboardEvent.key);
                 return;
             }
-            else{
-                //keyboardEvent.preventDefault();
-                //return;
-            }
+            vrCursor.updateFrom("anchor_selection");
+            /*if(key === undefined){
+                console.log(keyboardEvent.key);
+                keyboardEvent.preventDefault();
+                return;
+            }*/
 
             if(this.selectionActive){
                 if(key.specialAction){
@@ -435,12 +446,6 @@ class _gd_sandbox_editor{
             if(key.printKey){
                 keyboardEvent.preventDefault();
                 this.__print(key.printValue);
-                return;
-            }
-            
-            if(key === undefined){
-                console.log(keyboardEvent.key);
-                keyboardEvent.preventDefault();
                 return;
             }
             //alert(keyboardEvent.key);
@@ -730,6 +735,9 @@ class _line{
         this.fixedChildListFixedCount = 0;
         this.childListPresentSet = new Set();
     }
+    get length(){
+        return this.basicTextData.length;
+    }
     setLineNumber(lineNumber){
         this.uiElement._line_number = lineNumber;
         this._line_number = lineNumber;
@@ -744,12 +752,13 @@ class _line{
         this.uiElement.innerText = text;
         this.fixChildList();
     }
+    //NO DATA CHECK
     inputKey(key){
         /*if(key == "\n" || key == "\r" || key == "\r\n"){
 
         }*/
-        this.basicTextData += key.match(/./);
-         
+        this.basicTextData += key;
+        this.recomputeUiElement();
     }
     get textData(){
         return this.uiElement.innerText;
@@ -905,6 +914,7 @@ class _line{
         this._highlightMap = new Map();
     }
     highlight(id, startIndex, endIndex, type = HIGHLIGHT_TAG.noTag){
+        this._highlightMap.set(id, [type, new _gd_interval(startIndex, endIndex)]);
         let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
 
     }
@@ -915,7 +925,7 @@ class _line{
         start: Number,
         end: Number,
 }*/
-const VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\p{S}|\p{M}|\p{N}|\p{P}|\p{Zs}/u;
+const VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\p{L}|\p{S}|\p{M}|\p{N}|\p{P}|\p{Zs}/u;
 const NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP = /\P{L}|\P{Ll}/ug;
 const INTERVAL_ARRAY = [
     [0,0], //interval 1

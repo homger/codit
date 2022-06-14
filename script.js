@@ -12,10 +12,10 @@ document.onreadystatechange = function(){
 
 
 function main(){
-    //let editor = new _gd_sandbox_editor()
-    //document.body.appendChild(editor._editor)
+    let editor = new _gd_sandbox_editor()
+    document.body.appendChild(editor._editor)
 
-    console.log(_gd_interval.nested_interval_range_from_interval_list());
+    //console.log(_gd_interval.nested_interval_range_from_interval_list());
 
     //debugger;
     /*editor.newLine()
