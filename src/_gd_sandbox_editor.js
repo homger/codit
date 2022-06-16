@@ -12,7 +12,7 @@ const vrCursor = {
             case "anchor_selection":
                 let currentSelection = window.getSelection();
                 let valid_anchor = getValidParent(currentSelection.anchorNode);
-                this.line = !isNaN(valid_anchor.dataset._line_number)?  valid_anchor.dataset._line_number : this.line;
+                this.line = !isNaN(valid_anchor._line_number)?  valid_anchor._line_number : this.line;
                 this.index = currentSelection.anchorOffset;
                 console.log("line :  " + this.line + "       index :  " + this.index);
             default: return;
@@ -54,6 +54,8 @@ class _gd_sandbox_editor{
         this.hasFocus = false
         this._editor.addEventListener("focus", this.focus.bind(this));
         this._editor.addEventListener("focusout", this.focus.bind(this));
+        this._editor.addEventListener("click", this.click.bind(this));
+        
 
         this.uiElement = this._editor;
 
@@ -68,6 +70,9 @@ class _gd_sandbox_editor{
     }
     focusout(){
         this.hasFocus = false;
+    }
+    click(){
+        vrCursor.updateFrom("anchor_selection");
     }
     get cursorIndex(){
         return this._getSelector().anchorOffset == this._getSelector().focusOffset ? this._getSelector().focusOffset : undefined;
@@ -102,6 +107,15 @@ class _gd_sandbox_editor{
             return window.getSelection();
         //return Error(" document.activeElement === this._editor is false");
         return undefined;
+    }
+    filteredSelector(){
+        let selectorCach = this._getSelector();
+        return {
+            startLine: selectorCach.anchorNode._line_number,
+            endLine: selectorCach.focusNode._line_number,
+            startIndex: selectorCach.anchorOffset,
+            endIndex: selectorCach.focusOffset,
+        }
     }
     get anchorNode(){
         return this._getSelector().anchorNode;
@@ -143,6 +157,7 @@ class _gd_sandbox_editor{
 
     }
     set focusedLine(index){
+        //debugger;
         this.setCursorPosition(this._lineArray[index], 0);
     }
     get anchorNodeIsEmpty(){
@@ -414,6 +429,8 @@ class _gd_sandbox_editor{
             }*/
 
             if(this.selectionActive){
+                if(!key.wrapText){
+                }
                 if(key.specialAction){
                     keyboardEvent.preventDefault();
                     this._getSelector().deleteFromDocument();
@@ -548,6 +565,13 @@ class _gd_sandbox_editor{
         this.reorderLines_startAt_index(lineNumber);
         this.lineCount -= 1;
         return true;
+    }
+    deleteSelection(selection = this.filteredSelector()){
+        if(selection.startLine != selection.endLine){
+            for(let i = selection.startLine  + 1; i < selection.endLine; ++i){
+                this.deleteLine(i);
+            }
+        }
     }
     lineMutationFonction(mutationRecordArray, mutationObserver){
         //debugger;
@@ -721,7 +745,7 @@ class _line{
         this.uiElement = document.createElement("div");
         
         this.uiElement.className = "_line";
-        this.uiElement.dataset._gdm = true;
+        this.uiElement._gdm = true;
 
         
         this.uiElement._gd_line = this;
@@ -747,6 +771,9 @@ class _line{
         this.uiElement._line_number = lineNumber;
         this._line_number = lineNumber;
     }
+    clear(){
+        this.__setText("");
+    }
     
     __setText(text){
         /*
@@ -754,8 +781,9 @@ class _line{
         this.uiElement.appendChild(document.createTextNode(text ))*/
         //this.uiElement.appendChild(document.createElement("br"))
 
-        this.uiElement.innerText = text;
+        this.basicTextData = text;
         this.fixChildList();
+        this.recomputeUiElement();
     }
     //NO DATA CHECK
     inputKey(key){
@@ -764,6 +792,23 @@ class _line{
         }*/
         this.basicTextData += key;
         this.recomputeUiElement();
+    }
+    addString(string){
+
+        this.basicTextData = this.basicTextData.concat(string);
+        this.fixChildList();
+        this.recomputeUiElement();
+    }
+    
+    insertString(string, index){
+
+        let basicTextData = this.basicTextData;
+        index = index % (this.basicTextData.length + 1);
+
+        this.basicTextData = basicTextData.substring(0, index) + string + basicTextData.substring(index);
+        this.fixChildList();
+        this.recomputeUiElement();
+        return this.uiElement;
     }
     get textData(){
         return this.uiElement.innerText;
@@ -781,31 +826,10 @@ class _line{
     get_textData_range_as_line(a = 0 , b = undefined){
         return new _line(this.get_textData_range(a,b));
     }
-    addString(string){
-
-        this.textData = this.textData.concat(string);
-        this.fixChildList();
-    }
-    
-    insertString(string, index){
-        /*let textData = this.textData;
-        index = index % (this.textData.length + 1);
-
-        this.textData = textData.substring(0, index) + string + textData.substring(index);
-        this.fixChildList();*/
-
-        let basicTextData = this.basicTextData;
-        index = index % (this.basicTextData.length + 1);
-
-        this.basicTextData = basicTextData.substring(0, index) + string + basicTextData.substring(index);
-        this.fixChildList();
-        this.recomputeUiElement();
-        return this.uiElement;
-    }
     recomputeUiElement(){
 
         let text = this.filledTextNode(this.textData);
-        text.dataset._line_number = this._line_number;
+        //text.dataset._line_number = this._line_number;
         this.uiElement.innerHTML = this.basicTextData;
     }
     wrapText(startIndex, startString, endIndex, endString){
@@ -891,12 +915,12 @@ class _line{
     //to-do solution if a is negative other than error
     __orderAndCheckIndex(a = -1, b = -1){
 
-        let length = this.textData.length;
+        let length = this.length;
         /*a = Math.abs(a);
         if(b === undefined)
             b = length - 1;
         b = Math.abs(b);*/
-        if(a < 0 || b < 0 || a >= length || b >= length){
+        if(a < 0 || b < 0 || a > length || b > length){
             throw new Error("provided index are invalid:  " + a + " < 0 || " + b + " < 0 || " + a + " >= " + length + " || " + b + " >= " + length);
             
         }
@@ -907,15 +931,20 @@ class _line{
         }
         return {a,b};
     }
+    dismountUI(){
+        this.uiElement.parentNode.removeChild(this.uiElement);
+    }
+    delete(){
+        this.dismountUI();
+    }
     deleteFromTo(a,b){
         let order = this.__orderAndCheckIndex(a,b);
         start = order.a, end = order.b;
-        if(start <= textData.length && end <= textData.length){
-            this.textData = textData.substring(0, start) + textData.substring(end);
-            return;
+
+        if((end - start) == this.length){
+            this.clear();
         }
-        else
-            throw new Error("a <= this._string.length && b <= this._string.length  is false");
+        this.textData = textData.substring(0, start) + textData.substring(end);
         
     }
 
@@ -931,19 +960,17 @@ class _line{
 }
 
 function getValidParent(node){
-    if(node.dataset){
-        if(node.dataset._gdm){
-            return node;
-        }
+    if(node._gdm){
+        return node;
     }
+    
     node = node.parentNode;
     let i = 10;
     while(i > 0){
-        if(node.dataset){
-            if(node.dataset._gdm){
-                return node;
-            }
+        if(node._gdm){
+            return node;
         }
+        node = node.parentNode;
         --i;
     }
 }

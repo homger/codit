@@ -7,15 +7,18 @@ class _gd_event{
         //this.makeEventObject = this.makeEventObject.bind(this);
     }
 
+    //removed the checks so that user can know if he did something wrong
     addEventListener(name, callFunction){
-        if(this.eventNameList.has(name)){
+        /*if(this.eventNameList.has(name)){
             this.eventNameList.get(name).callFunctionList.add(callFunction);
-        }
+        }*/
+        this.eventNameList.get(name).callFunctionList.add(callFunction);
     }
     removeEventListener(name, callFunction){
-        if(this.eventNameList.has(name)){
+        /*if(this.eventNameList.has(name)){
             this.eventNameList.get(name).callFunctionList.delete(callFunction);
-        }
+        }*/
+        this.eventNameList.get(name).callFunctionList.delete(callFunction);
     }
 
     __addEventType(name, eventObjectNameArray){
@@ -23,18 +26,19 @@ class _gd_event{
     }
 
     dispatchEvent(eventName){
-        let cach;
+        
         if(this.eventNameList.has(eventName)){
 
-            cach = this.eventNameList.get(eventName);
+            let cach = this.eventNameList.get(eventName);
+            let dispatchObject = this.make_ObjectToDispatchWith_Event(cach.eventObjectNameArray);
             //debugger;
-            cach.callFunctionList.forEach(callFunction => callFunction(this.makeEventObject(cach.eventObjectNameArray)) );
+            cach.callFunctionList.forEach(callFunction => callFunction(dispatchObject) );
             return;
         }
         throw new Error("dispatchEvent(eventName)  eventName not found");
     }
 
-    makeEventObject(eventObjectNameArray){
+    make_ObjectToDispatchWith_Event(eventObjectNameArray){
         let eventObj = {};
         eventObjectNameArray.forEach(name => eventObj[name] = this[name]);
 
