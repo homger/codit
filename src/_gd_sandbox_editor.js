@@ -3,9 +3,19 @@
 const vrCursor = {
     line : 0,
     index : 0,
+    _lineOffset: 0,
+    _indexOffset: 0,
+    _apply_lineOffset: () => {this.line += this._lineOffset; this._lineOffset = 0},
+    _apply_indexOffset: () => {this.index += this._indexOffset; this._indexOffset = 0},
+    applyOffset: () => {
+        this._apply_lineOffset();
+        this._apply_indexOffset();
+    },
     reset : function(){
         this.line = 0;
         this.index = 0;
+        this._lineOffset = 0;
+        this._indexOffset = 0;
     },
     updateFrom : function(from){
         switch(from){
@@ -18,6 +28,7 @@ const vrCursor = {
             default: return;
         }
     },
+
 }
 
 
@@ -52,15 +63,15 @@ class _gd_sandbox_editor{
         this._editor.addEventListener("keydown", this.keyAction);
 
         this.hasFocus = false
-        this._editor.addEventListener("focus", this.focus.bind(this));
-        this._editor.addEventListener("focusout", this.focus.bind(this));
+        this._editor.addEventListener("focus", this.onFocus.bind(this));
+        this._editor.addEventListener("focusout", this.onFocusout.bind(this));
         this._editor.addEventListener("click", this.click.bind(this));
         
 
         this.uiElement = this._editor;
 
     }
-    focus(){
+    onFocus(){
         if(this.lineCount == 0){
             this.newLine();
             this.focusedLine = 0;
@@ -68,7 +79,7 @@ class _gd_sandbox_editor{
 
         this.hasFocus = true;
     }
-    focusout(){
+    onFocusout(){
         this.hasFocus = false;
     }
     click(){
@@ -111,8 +122,8 @@ class _gd_sandbox_editor{
     filteredSelector(){
         let selectorCach = this._getSelector();
         return {
-            startLine: selectorCach.anchorNode._line_number,
-            endLine: selectorCach.focusNode._line_number,
+            startLine: getValidParent(selectorCach.anchorNode)._line_number,
+            endLine: getValidParent(selectorCach.focusNode)._line_number,
             startIndex: selectorCach.anchorOffset,
             endIndex: selectorCach.focusOffset,
         }
@@ -158,7 +169,15 @@ class _gd_sandbox_editor{
     }
     set focusedLine(index){
         //debugger;
-        this.setCursorPosition(this._lineArray[index], 0);
+
+        
+        if(index < 0){
+            console.warn("index is negative :  " + index);
+            return;
+        }
+        vrCursor.line = index;
+
+        this.setCursorPosition(this._lineArray[index].uiElement, 0);
     }
     get anchorNodeIsEmpty(){
         return !isNaN(getValidParent(selection.anchorNode).dataset._line_number) ? true : false;
@@ -201,6 +220,7 @@ class _gd_sandbox_editor{
     }
 
     setCursorPosition(node, index){
+        console.log(node);
         let selector = this._getSelector();
         console.log("selector   :   "   +  selector);
         if(selector)
@@ -312,63 +332,34 @@ class _gd_sandbox_editor{
     }
     __print(printValue, index = vrCursor.index, line = vrCursor.line){
         console.log(line);
-        if(line === undefined){
+        /*if(line === undefined){
             line = this.anchorNode._line_number;
-        }
+        }*/
         this._lineArray[line].insertString(printValue,index);
         ++vrCursor.index;
         this.setCursorPosition(this._lineArray[line].uiElement, index);
-        
-        /*
-        const {anchorOffset, focusOffset} = this.anchor_focus_offset;
-        let value = this._editor.textContent;
-
-        if(anchorOffset != focusOffset){
-            if(anchorOffset - focusOffset > 0)
-                this._editor.textContent = `${value.slice(0,focusOffset)}${printValue}${value.slice(anchorOffset)}`;
-            else
-                this._editor.textContent = `${value.slice(0,anchorOffset)}${printValue}${value.slice(focusOffset)}`;
-        
-        
-        
-            this._getSelector().removeAllRanges();
-            
-            let range = document.createRange();
-            range.setStart(this._editor, anchorOffset + printValue.length + cursorOffset);
-            this._getSelector().addRange(range);
-
-            //this._getSelector().focusOffset = anchorOffset + printValue.length + cursorOffset;
-            //this._getSelector().anchorOffset = anchorOffset + printValue.length + cursorOffset;
-            return;
-        }
-        
-        this._editor.textContent = `${value.slice(0,anchorOffset)}${printValue}${value.slice(anchorOffset)}`;
-        
-        
-        
-        this._getSelector().removeAllRanges();
-        
-        let range = document.createRange();
-        range.setStart(this._editor, anchorOffset + printValue.length + cursorOffset);
-        this._getSelector().addRange(range);
-
-        //this._getSelector().focusOffset = focusOffset + printValue.length + cursorOffset;
-        //this._getSelector().anchorOffset = anchorOffset + printValue.length + cursorOffset;
-        
-        */
-        //console.log(value);
     }
-    /*
+    __print_brut(printValue, index = vrCursor.index, line = vrCursor.line){
+        console.log(line);
+        /*if(line === undefined){
+            line = this.anchorNode._line_number;
+        }*/
+        this._lineArray[line].insertBrutContent(printValue,index);
+        ++vrCursor.index;
+        this.setCursorPosition(this._lineArray[line].uiElement, index);
+    }
+    /*// print xor wrap xor specialAction ?? or...
     keyAction options = {
-        printKey: true,
+        printKey: false,
         printValue: "",
         printBrut: false,
         cursorOffset: 0,
-        specialAction: true,
+        specialAction: false,
         specialFunction: function(textArea){},
-        wrapText: true,
+        wrapText: false,
         beforeWrapValue:"",
         afterWrapValue:"",
+        preventDefault: false,
     }
     */
    
@@ -377,7 +368,7 @@ class _gd_sandbox_editor{
         this.keyActionMap = new Map();
 
         this.addKeyAction("Shift", {specialAction: true, specialFunction: function(){
-            console.log(this.anchorNode);
+            alert("SPE");
         }.bind(this)});
 
         this.addKeyAction("Tab", {printKey: true, printValue: "  "});
@@ -417,6 +408,7 @@ class _gd_sandbox_editor{
             
             if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
                 keyboardEvent.preventDefault();
+                this.deleteSelection();
                 this.__print(keyboardEvent.key);
                 console.log("to basic data:  " + keyboardEvent.key);
                 return;
@@ -428,44 +420,47 @@ class _gd_sandbox_editor{
                 return;
             }*/
 
-            if(this.selectionActive){
-                if(!key.wrapText){
-                }
-                if(key.specialAction){
-                    keyboardEvent.preventDefault();
-                    this._getSelector().deleteFromDocument();
-                    key.specialFunction();
-                    return;
-                }
-                if(key.wrapText){
-                    keyboardEvent.preventDefault();
-                    if(key.printBrut){
-                        
+            if(key){
+                
+            
+                if(this.selectionActive){
+                    if(key.wrapText){
+                        keyboardEvent.preventDefault();
+                        if(key.printBrut){
+                            this.__wrapSelection_brut(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
+                            return;
+                        }
+                        this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
+                        return;
                     }
-                    this.__wrapSelection_brut(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
+                    if(key.printKey){
+                        keyboardEvent.preventDefault();
+                        this.deleteSelection();
+                        if(key.printBrut){
+                            this.__print_brut(key.printValue);
+                            return;
+                        }
+                        this.__print(key.printValue);
+                        return;
+                    }
+                    if(key.specialAction){
+                        keyboardEvent.preventDefault();
+                        key.specialFunction();
+                        return;
+                    }
                     return;
                 }
                 if(key.printKey){
                     keyboardEvent.preventDefault();
-                    if(key.printBrut){
-
-                    }
-
-                    this._getSelector().deleteFromDocument();
                     this.__print(key.printValue);
                     return;
                 }
-            }
-            if(key.specialAction){
-                keyboardEvent.preventDefault();
-                key.specialFunction();
-                return;
+                if(key.specialAction){
+                    keyboardEvent.preventDefault();
+                    key.specialFunction();
+                    return;
 
-            }
-            if(key.printKey){
-                keyboardEvent.preventDefault();
-                this.__print(key.printValue);
-                return;
+                }
             }
             //alert(keyboardEvent.key);
 
@@ -509,6 +504,8 @@ class _gd_sandbox_editor{
             this._lineArray[index].uiElement.insertAdjacentElement("afterend", line.uiElement);
         }
 
+        vrCursor.line = line._line_number;
+        vrCursor.index = vrCursor.index % (line.basicTextData.length + 1);
         this.setCursorPosition(line.uiElement, this.cursorIndex % line.textData.length);
         this.lineCount += 1;
         
@@ -561,16 +558,34 @@ class _gd_sandbox_editor{
     deleteLine(lineNumber){//VF_1
         if(lineNumber < 0 || lineNumber >= this.lineCount)
             return false;
+        this._lineArray[lineNumber].delete();
         this._lineArray.splice(lineNumber, 1);
         this.reorderLines_startAt_index(lineNumber);
         this.lineCount -= 1;
         return true;
     }
-    deleteSelection(selection = this.filteredSelector()){
+    deleteSelection(selection = this.filteredSelector(), ajustCursor = true){
+        console.log(selection);
         if(selection.startLine != selection.endLine){
             for(let i = selection.startLine  + 1; i < selection.endLine; ++i){
                 this.deleteLine(i);
             }
+
+            if(selection.startLine < selection.endLine){
+                this._lineArray[selection.startLine].deleteFromTo(selection.startIndex, this._lineArray[selection.startLine].length - 1);
+                this._lineArray[selection.endLine].deleteFromTo(0,selection.endIndex);
+            }
+            else{
+                this._lineArray[selection.endLine].deleteFromTo(selection.endIndex, this._lineArray[selection.endLine].length - 1);
+                this._lineArray[selection.startLine].deleteFromTo(0,selection.startIndex);
+            }
+        }
+        else{
+            this._lineArray[selection.startLine].deleteFromTo(selection.startIndex, selection.endIndex);
+        }
+        if(ajustCursor){
+            vrCursor.line = selection.startLine < selection.endLine ? selection.startLine : selection.endLine;
+            vrCursor.index = selection.startIndex < selection.endIndex ? selection.startIndex : selection.endIndex;
         }
     }
     lineMutationFonction(mutationRecordArray, mutationObserver){
@@ -754,6 +769,7 @@ class _line{
         //***to-do for mutiline textwrap */
         this.highlightSetup();
         this.basicTextData = initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
+        this.brutContent = this.basicTextData;
         //this.textData = initialStringValue;
         this.uiElement.appendChild(document.createTextNode(""));
         this.uiElement.appendChild(document.createElement("br"));
@@ -830,7 +846,11 @@ class _line{
 
         let text = this.filledTextNode(this.textData);
         //text.dataset._line_number = this._line_number;
-        this.uiElement.innerHTML = this.basicTextData;
+        this.brutContent = this.basicTextData;
+        this.applyBrutContent();
+    }
+    applyBrutContent(){
+        this.uiElement.innerHTML = this.brutContent;
     }
     wrapText(startIndex, startString, endIndex, endString){
         /**
@@ -838,10 +858,10 @@ class _line{
          * to-do Check parameters values
          */
 
-         let textData = this.textData;
+         let basicTextData = this.basicTextData;
          let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
          startIndex = orderedIndex.a, endIndex = orderedIndex.b;
-         this.textData = textData.substring(0, startIndex) + startString + textData.substring(startIndex, endIndex) + endString + textData.substring(endIndex);
+         this.basicTextData = basicTextData.substring(0, startIndex) + startString + basicTextData.substring(startIndex, endIndex) + endString + basicTextData.substring(endIndex);
          this.fixChildList();
 
     }
@@ -862,6 +882,7 @@ class _line{
 
         this.brutContent = brutContent.substring(0, index) + brutString + brutContent.substring(index);
         this.fixChildList();
+        this.applyBrutContent();
     }
 
     getBrutContent(){
@@ -894,6 +915,8 @@ class _line{
          let orderedIndex = this._brut__orderAndCheckIndex(startIndex, endIndex);
          startIndex = orderedIndex.a, endIndex = orderedIndex.b;
          this.brutContent = brutContent.substring(0, startIndex) + startContent + brutContent.substring(startIndex, endIndex) + endContent + brutContent.substring(endIndex);
+         
+        this.applyBrutContent();
 
     }
     
@@ -939,12 +962,12 @@ class _line{
     }
     deleteFromTo(a,b){
         let order = this.__orderAndCheckIndex(a,b);
-        start = order.a, end = order.b;
+        let start = order.a, end = order.b;
 
         if((end - start) == this.length){
             this.clear();
         }
-        this.textData = textData.substring(0, start) + textData.substring(end);
+        this.basicTextData = this.basicTextData.substring(0, start) + this.basicTextData.substring(end);
         
     }
 
@@ -1000,10 +1023,3 @@ function interval(intervalArray = INTERVAL_ARRAY){
     })
     return intervallMap;
 }
-
-
-
-
-
-
-
