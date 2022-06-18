@@ -224,7 +224,8 @@ class _gd_sandbox_editor{
         let selector = this._getSelector();
         console.log("selector   :   "   +  selector);
         if(selector)
-            selector.collapse(node, index);
+            getValidParent(node)._gd_line.cursorToIndex(selector, index);
+            
         else
             console.error("SELECTOR :  " + selector);
     }
@@ -846,7 +847,7 @@ class _line{
 
         let text = this.filledTextNode(this.textData);
         //text.dataset._line_number = this._line_number;
-        this.brutContent = this.basicTextData;
+        this.brutContent = this.filledTextNode(this.basicTextData);
         this.applyBrutContent();
     }
     applyBrutContent(){
@@ -980,6 +981,10 @@ class _line{
 
     }
     
+    cursorToIndex(selection = window.getSelection(), index = this.length){
+
+        selection.collapse(this.uiElement, index);
+    }
 }
 
 function getValidParent(node){
