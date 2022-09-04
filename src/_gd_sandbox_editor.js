@@ -317,7 +317,11 @@ class _gd_sandbox_editor{
             console.log("WRAP anchorOffset    :  " + anchorOffset);
             console.log("WRAP focusOffset    :  " + focusOffset);
             if(selection.anchorNode === selection.focusNode){
-                this._lineArray[selection.anchorNode.parentNode._line_number].wrapBrutContent(anchorOffset, startPrintValue, focusOffset, endPrintValue);
+                //TEST
+
+                this._lineArray[selection.anchorNode.parentNode._line_number].highlight(0,selection.focusOffset, selection.anchorNode, HIGHLIGHT_TAG.keywords);
+
+                //this._lineArray[selection.anchorNode.parentNode._line_number].wrapBrutContent(anchorOffset, startPrintValue, focusOffset, endPrintValue);
                 return;
             }
             //debugger;
@@ -328,6 +332,7 @@ class _gd_sandbox_editor{
             }
             this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset);
             this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset);
+            this._lineArray[selection.anchorNode.parentNode._line_number].highlight()
         }
         console.log();
     }
@@ -847,11 +852,11 @@ class _line{
 
         let text = this.filledTextNode(this.textData);
         //text.dataset._line_number = this._line_number;
-        this.brutContent = this.filledTextNode(this.basicTextData);
+        this.brutContent = this.basicTextData;
         this.applyBrutContent();
     }
     applyBrutContent(){
-        this.uiElement.innerHTML = this.brutContent;
+        this.uiElement.append(this.brutContent);
     }
     wrapText(startIndex, startString, endIndex, endString){
         /**
@@ -973,14 +978,35 @@ class _line{
     }
 
     highlightSetup(){
+        //called "tag" but are html balise
+        //_highlightMap entrie : [type of tag, _gd_interval object, bool tag status open/closed] 
         this._highlightMap = new Map();
     }
     highlight(id, startIndex, endIndex, type = HIGHLIGHT_TAG.noTag){
-        this._highlightMap.set(id, [type, new _gd_interval(startIndex, endIndex)]);
+        
         let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
+        this._highlightMap.set(id, [type, new _gd_interval(orderedIndex.a, orderedIndex.b, id), false]);
+
+        apply_highlight();
 
     }
-    
+    apply_highlight(){
+        let IntervalArray = Array.from(this._highlightMap.values());
+        let tag_layering_array = _gd_interval.nested_interval_range_from_interval_list(IntervalArray);
+
+        let indexDecal = 0;
+        let concatenated_tag_string = "";
+        tag_layering_array.forEach((value) => {
+            value[1].forEach((value) => {
+                this._highlightMap.get(value)[2]  != this._highlightMap.get(value)[2];
+                concatenated_tag_string += this._highlightMap.get(value)[2] ? this._highlightMap.get(value)[0].start : this._highlightMap.get(value)[0].end;
+                
+            });
+            this.insertBrutContent(concatenated_tag_string, value[0] + indexDecal);
+            indexDecal += concatenated_tag_string.length;
+            concatenated_tag_string = "";
+        });
+    }
     cursorToIndex(selection = window.getSelection(), index = this.length){
 
         selection.collapse(this.uiElement, index);
@@ -1001,6 +1027,7 @@ function getValidParent(node){
         node = node.parentNode;
         --i;
     }
+    return null;
 }
 
 /* interval = {
