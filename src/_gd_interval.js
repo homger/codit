@@ -5,6 +5,9 @@
 class _gd_interval{
     constructor(start = -1, end = -1, id = null){
             
+        if(start == end){
+            throw new Error("Bad arguments : Interval start == interval end");
+        }
         this.start = start;
         this.end = end;
         if(start > end){
@@ -71,7 +74,7 @@ class _gd_interval{
     
     //Intervals should be ordered by their start value.
     //Intervals id should be unique...
-    static nested_interval_range_from_interval_list(intervalArray = _1_test_inntervalArray){
+    static nested_interval_range_from_interval_list(intervalArray = _2_test_inntervalArray){
         let nested_Interval_Array = [];
         let nested_Interval_Map = new Map();
         
@@ -140,7 +143,7 @@ class _gd_interval{
 
                 if(interval_state_map.get(intervalId)[0] === false){
                     interval_state_map.get(intervalId)[0] = true;
-                    autoStackArray.add(intervalId);
+                    //autoStackArray.add(intervalId);
                     open_action_array.push(intervalId);
                 }
                 else if(interval_state_map.get(intervalId)[0] === true){
@@ -148,10 +151,14 @@ class _gd_interval{
                     if(autoStackArray.has(intervalId)){
 
                         autoStackArray.transferUntilValueFound(intervalId, transferAuTostack);
+                        
                         transferAuTostack.add(autoStackArray.remove());
                         
                     }
-                    
+                    /*else{
+                        //can't happen
+                        //close_action_array.push(intervalId);
+                    }*/
                 }
                 else{
                     throw new Error("Wrong data : interval_state_map[intervalId]   : "  +  interval_state_map.get(intervalId)[0]);
@@ -173,6 +180,7 @@ class _gd_interval{
                     reopen_action_array.push(id);
                 }
             });
+            open_action_array.forEach(interval_id => autoStackArray.add(interval_id));
 
             
             nested_Interval_Array.push([changeIntervalPoint[0], close_action_array.concat(reopen_action_array, open_action_array)]);
