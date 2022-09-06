@@ -32,12 +32,16 @@ class _gd_interval{
         return false;
     }
 
+    //change the calling interval
     combine_interval(interval){
         if(interval.start < this.start)
             this.start = interval.start;
         
         if(interval.end > this.end)
             this.end = interval.end;
+    }
+    fuse_with_interval(interval){
+        this.combine_interval(interval);
     }
     
     //change the calling interval
@@ -269,7 +273,13 @@ const _2_slim_test_inntervalArray_result_after_nested___ = [
 
 
 //FOR _gd_interval
-// THE
+// foreEach_REVERSE calssic for each, but goes from the last element to the first.
+// foreEach
+// has
+// add ignore undefined
+// remove remove and return the last element.
+// viewTop return the last element
+// transferUntilValueFound and transferAll give itself as argument to the callback.
 class First_In_First_Out_Stack{
     constructor(){
         this.stackArray = [];
