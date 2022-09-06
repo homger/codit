@@ -124,8 +124,12 @@ class _gd_interval{
 
 
         
-        let autoStackArray = new First_In_First_Out_Stack(); 
-        let transferAuTostack = new First_In_First_Out_Stack();
+        let autoStackArray = new First_In_First_Out_Stack(); // to keep in memory the order in witch the interval are opened.
+
+        let transferAuTostack = new First_In_First_Out_Stack(); /* 
+        for wen interval [X] has to be closed. al interval opened after [X] will be stocked inside including [X] itself.
+        The interval in transferAuToStack other than [X] will then be reopened, unless they were marked to be closed at the same point as x.
+        */
 
         //huh..
         //comment inside..
@@ -135,14 +139,18 @@ class _gd_interval{
             let close_action_array = []; // For when an interval will be closed temporarily or definitely
             let reopen_action_array = []; // To reopen an interval that was closed Temporarily.
 
-            //1. for each point of change i find out if there is a start.
-            //2. if there is a closure i transfer every interval id up-to and including the id of the interval to be closed from autoStackArray to transferAuTostack.
-            //2.1 if the... will make myself a readme
+            
+            
             
             changeIntervalPoint[1].forEach(intervalId => {
 
+                //1. for each point of change i open or close the intervals listed depending on their prior state.
+                // if sloted to open they are added to the open_action_array and later to autoStackArray to avoid a bad order.
+                // if sloted to close we transfer them from autoStackArray to transferAuTostack, 
+                // automaticaly transfering the intervals opened after the target one to autoStackArray as well
                 if(interval_state_map.get(intervalId)[0] === false){
                     interval_state_map.get(intervalId)[0] = true;
+                    
                     //autoStackArray.add(intervalId);
                     open_action_array.push(intervalId);
                 }
@@ -168,11 +176,16 @@ class _gd_interval{
             //let open_close_action_array = [];
 
             console.log("Stack array :  " + autoStackArray.stackArray);
+
+            // All the intervals(id) in transferAuTostack are added to close_action_array.
             transferAuTostack.foreEach((id) => {
                 
                 close_action_array.push(id);
             });
 
+            // We go through transferAuTostack in reverse order to create "reopen_action_array".
+            // first the interval is removed from transferAuToStack/
+            // then tested to see if it still open. if so it is added to autoStackArray and then to reopen_action_array.
             transferAuTostack.foreEach_REVERSE(id => {
                 transferAuTostack.remove();
                 if(interval_state_map.get(id)[0]){
@@ -180,9 +193,16 @@ class _gd_interval{
                     reopen_action_array.push(id);
                 }
             });
+            
+            //Here the interval opened for the first time are finally added to autoStackArray to conserve the opening and closing order.
             open_action_array.forEach(interval_id => autoStackArray.add(interval_id));
 
             
+            //The final step. A new entry is created in nested_Interval_Array witch an array of two elements. The index of the interval change.
+            // and a array containing: 
+            // 1: the intervals to close in good order, 
+            // 2: then the intervals to reopen in good order, 
+            // 3: finally the intervals that will be opened for the first time in a non-optimised order
             nested_Interval_Array.push([changeIntervalPoint[0], close_action_array.concat(reopen_action_array, open_action_array)]);
         });        
         return nested_Interval_Array;
