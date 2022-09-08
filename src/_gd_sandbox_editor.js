@@ -761,6 +761,12 @@ const HIGHLIGHT_TAG = {
 }
 
 class _line{
+    constructor(){
+        this._plain_text = "";
+    }
+}
+
+class old_line{
     constructor(initialStringValue = ""){
         
         this.uiElement = document.createElement("div");
@@ -775,6 +781,7 @@ class _line{
         //***to-do for mutiline textwrap */
         this.highlightSetup();
         this.basicTextData = initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
+        this._text_data = "";
         this.brutContent = this.basicTextData;
         //this.textData = initialStringValue;
         this.uiElement.appendChild(document.createTextNode(""));
