@@ -60,7 +60,8 @@ class _gd_sandbox_editor{
             this._file.content = this._editor.textContent;
             console.log(`slect start:  ${this._getSelector().anchorOffset} || slect end: ${this._getSelector().focusOffset}`);
         }.bind(this));*/
-        this._editor.addEventListener("keydown", this.keyAction);
+        //this._editor.addEventListener("keydown", this.keyAction);
+        this._editor.addEventListener("keyup", this.keyAction);
 
         this.hasFocus = false
         this._editor.addEventListener("focus", this.onFocus.bind(this));
@@ -126,6 +127,8 @@ class _gd_sandbox_editor{
             endLine: getValidParent(selectorCach.focusNode)._line_number,
             startIndex: selectorCach.anchorOffset,
             endIndex: selectorCach.focusOffset,
+            multilineSelection: this.startLine != this.endLine,
+            selection: this.startIndex != this.endIndex || this.multilineSelection,
         }
     }
     get anchorNode(){
@@ -468,7 +471,7 @@ class _gd_sandbox_editor{
 
                 }
             }
-            //alert(keyboardEvent.key);
+            //alert(keyboardEvent.key);*/
 
     }
 
@@ -571,7 +574,11 @@ class _gd_sandbox_editor{
         return true;
     }
     deleteSelection(selection = this.filteredSelector(), ajustCursor = true){
-        console.log(selection);
+        console.log("deleteSelection");
+        if(!selection.selection){
+            console.log("deleteSelection no selection");
+            return;
+        }
         if(selection.startLine != selection.endLine){
             for(let i = selection.startLine  + 1; i < selection.endLine; ++i){
                 this.deleteLine(i);
@@ -587,6 +594,7 @@ class _gd_sandbox_editor{
             }
         }
         else{
+            
             this._lineArray[selection.startLine].deleteFromTo(selection.startIndex, selection.endIndex);
         }
         if(ajustCursor){
@@ -760,13 +768,13 @@ const HIGHLIGHT_TAG = {
     },
 }
 
-class _line{
+class __line{
     constructor(){
         this._plain_text = "";
     }
 }
 
-class old_line{
+class _line{
     constructor(initialStringValue = ""){
         
         this.uiElement = document.createElement("div");
@@ -830,7 +838,10 @@ class old_line{
     }
     
     insertString(string, index){
-
+        if(index == this.length){
+            this.addString(string);
+            return this.uiElement;
+        }
         let basicTextData = this.basicTextData;
         index = index % (this.basicTextData.length + 1);
 
@@ -840,7 +851,7 @@ class old_line{
         return this.uiElement;
     }
     get textData(){
-        return this.uiElement.innerText;
+        return this.basicTextData;
     }
     set textData(newTextData){
         this.__setText(newTextData);
@@ -857,13 +868,13 @@ class old_line{
     }
     recomputeUiElement(){
 
-        let text = this.filledTextNode(this.textData);
+        //let text = this.filledTextNode(this.textData);
         //text.dataset._line_number = this._line_number;
         this.brutContent = this.basicTextData;
         this.applyBrutContent();
     }
     applyBrutContent(){
-        this.uiElement.append(this.brutContent);
+        //this.uiElement.append(this.brutContent);
     }
     wrapText(startIndex, startString, endIndex, endString){
         /**
@@ -956,8 +967,8 @@ class old_line{
         if(b === undefined)
             b = length - 1;
         b = Math.abs(b);*/
-        if(a < 0 || b < 0 || a > length || b > length){
-            throw new Error("provided index are invalid:  " + a + " < 0 || " + b + " < 0 || " + a + " >= " + length + " || " + b + " >= " + length);
+        if(a < 0 || b < 0 || a > length+1 || b > length+1){
+            throw new Error("provided index are invalid:  Index a:" + a + " < 0 || Index b:" + b + " < 0 || Index a:" + a + " >= " + length + "+1 || Index b:" + b + " >= " + length + "+1");
             
         }
         if( a > b){
@@ -974,11 +985,13 @@ class old_line{
         this.dismountUI();
     }
     deleteFromTo(a,b){
+        console.log("FUNCTION CALL: deleteFromTo(a,b)");
         let order = this.__orderAndCheckIndex(a,b);
         let start = order.a, end = order.b;
 
         if((end - start) == this.length){
             this.clear();
+            return;
         }
         this.basicTextData = this.basicTextData.substring(0, start) + this.basicTextData.substring(end);
         

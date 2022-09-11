@@ -12,11 +12,11 @@ document.onreadystatechange = function(){
 let test_interval_array = [new _gd_interval(2,5,"Z"),new _gd_interval(2,6,"A"), new _gd_interval(0,6,"B"), new _gd_interval(2,5,"C")];
 
 function main(){
-    /*let editor = new _gd_sandbox_editor()
-    document.body.appendChild(editor._editor)*/
+    let editor = new _gd_sandbox_editor()
+    document.body.appendChild(editor._editor)
 
     console.log(_gd_interval.nested_interval_range_from_interval_list(test_interval_array));
-    VisualiseNestedInterval(_gd_interval.nested_interval_range_from_interval_list(test_interval_array));
+    //VisualiseNestedInterval(_gd_interval.nested_interval_range_from_interval_list(test_interval_array));
     //debugger;
     /*editor.newLine()
     editor.newLine()
