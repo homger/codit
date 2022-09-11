@@ -60,8 +60,8 @@ class _gd_sandbox_editor{
             this._file.content = this._editor.textContent;
             console.log(`slect start:  ${this._getSelector().anchorOffset} || slect end: ${this._getSelector().focusOffset}`);
         }.bind(this));*/
-        //this._editor.addEventListener("keydown", this.keyAction);
-        this._editor.addEventListener("keyup", this.keyAction);
+        this._editor.addEventListener("keydown", this.keyAction);
+        //this._editor.addEventListener("keyup", this.keyAction);
 
         this.hasFocus = false
         this._editor.addEventListener("focus", this.onFocus.bind(this));
@@ -175,6 +175,7 @@ class _gd_sandbox_editor{
 
         
         if(index < 0){
+            //throw new Error("index is negative :  " + index);
             console.warn("index is negative :  " + index);
             return;
         }
@@ -414,7 +415,7 @@ class _gd_sandbox_editor{
     keyAction(keyboardEvent){
         
             let key = this.keyActionMap.get(keyboardEvent.key);
-            
+            console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
             if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
                 keyboardEvent.preventDefault();
                 this.deleteSelection();
@@ -423,6 +424,7 @@ class _gd_sandbox_editor{
                 return;
             }
             vrCursor.updateFrom("anchor_selection");
+            console.log("VR C INDEX UPDATE: " + vrCursor.index);
             /*if(key === undefined){
                 console.log(keyboardEvent.key);
                 keyboardEvent.preventDefault();
@@ -831,7 +833,7 @@ class _line{
         this.recomputeUiElement();
     }
     addString(string){
-
+        console.log("ADD STRING");
         this.basicTextData = this.basicTextData.concat(string);
         this.fixChildList();
         this.recomputeUiElement();
@@ -1028,7 +1030,7 @@ class _line{
         });
     }
     cursorToIndex(selection = window.getSelection(), index = this.length){
-
+        console.log(index);
         selection.collapse(this.uiElement, index);
     }
 }
