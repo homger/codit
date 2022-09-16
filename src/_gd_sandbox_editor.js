@@ -347,6 +347,7 @@ class _gd_sandbox_editor{
         }*/
         this._lineArray[line].insertString(printValue,index);
         ++vrCursor.index;
+        //debugger;
         this.setCursorPosition(this._lineArray[line].uiElement, index);
     }
     __print_brut(printValue, index = vrCursor.index, line = vrCursor.line){
@@ -413,7 +414,8 @@ class _gd_sandbox_editor{
     }
     
     keyAction(keyboardEvent){
-        
+
+            _slot_keyAction_call();
             let key = this.keyActionMap.get(keyboardEvent.key);
             console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
             if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
@@ -423,7 +425,6 @@ class _gd_sandbox_editor{
                 console.log("to basic data:  " + keyboardEvent.key);
                 return;
             }
-            vrCursor.updateFrom("anchor_selection");
             console.log("VR C INDEX UPDATE: " + vrCursor.index);
             /*if(key === undefined){
                 console.log(keyboardEvent.key);
@@ -473,6 +474,12 @@ class _gd_sandbox_editor{
 
                 }
             }
+            vrCursor.updateFrom("anchor_selection");
+
+            
+
+            //_slot_keyAction_add(vrCursor.updateFrom, "anchor_selection");
+            
             //alert(keyboardEvent.key);*/
 
     }
@@ -783,24 +790,25 @@ class _line{
         
         this.uiElement.className = "_line";
         this.uiElement._gdm = true;
-
-        
         this.uiElement._gd_line = this;
         
 
         //***to-do for mutiline textwrap */
         this.highlightSetup();
-        this.basicTextData = initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
+        this.basicTextData = "";//initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
+        
+        
+
         this._text_data = "";
         this.brutContent = this.basicTextData;
-        //this.textData = initialStringValue;
-        this.uiElement.appendChild(document.createTextNode(""));
-        this.uiElement.appendChild(document.createElement("br"));
+        //this.uiElement.appendChild(document.createElement("br"));
         
         //this.updateUi()
         this.fixedChildListFixedCount = 0;
         this.childListPresentSet = new Set();
+        this.textNodeList = [];
     }
+    
     get length(){
         return this.basicTextData.length;
     }
@@ -815,10 +823,6 @@ class _line{
     }
     
     __setText(text){
-        /*
-        this.uiElement.innerHTML = "";
-        this.uiElement.appendChild(document.createTextNode(text ))*/
-        //this.uiElement.appendChild(document.createElement("br"))
 
         this.basicTextData = text;
         this.fixChildList();
@@ -870,9 +874,21 @@ class _line{
     }
     recomputeUiElement(){
 
+
         //let text = this.filledTextNode(this.textData);
         //text.dataset._line_number = this._line_number;
-        this.brutContent = this.basicTextData;
+        
+        
+        //this.textn.replaceData(0, this.textn.length, this.basicTextData);
+        console.log(this.textn);
+        if(this.textNodeList.length == 0){
+            this.textNodeList.push(new Text(""));
+            this.uiElement.appendChild(this.textNodeList[0]);
+        }
+        this.textNodeList[0].replaceData(0, this.textNodeList[0].length, this.basicTextData);
+        
+        console.log(this.textn);
+        //this.brutContent = "<span class='blue'>" +this.basicTextData +"<span>";
         this.applyBrutContent();
     }
     applyBrutContent(){
@@ -999,6 +1015,10 @@ class _line{
         
     }
 
+    sectorsSetup(){
+        this._texte_sector = new _gd_interval_sector();
+    }
+
     highlightSetup(){
         //called "tag" but are html balise
         //_highlightMap entrie : [type of tag, _gd_interval object, bool tag status open/closed] 
@@ -1050,6 +1070,24 @@ function getValidParent(node){
         --i;
     }
     return null;
+}
+//for key action call function sloted to be called before the main bloc.
+const _slot_keyAction = {
+
+}
+var __slotkeyaction = [];
+function _slot_keyAction_call(){
+    __slotkeyaction.forEach(fn_arg_array => {
+        if(fn_arg_array[1] !== undefined){
+            fn_arg_array[0](fn_arg_array[1]);
+        }
+        fn_arg_array[0]()
+    });
+    __slotkeyaction = [];
+}
+
+function _slot_keyAction_add(fn, arg = undefined){
+    __slotkeyaction.push([fn, arg]);
 }
 
 /* interval = {

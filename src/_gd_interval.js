@@ -10,13 +10,46 @@ class _gd_interval{
         }
         this.start = start;
         this.end = end;
-        if(start > end){
+        if(this.start > this.end){
             this.start = end;
             this.end = start;
         }
         this.id = id;
     }
-
+    get length(){
+        return this.start - this.end;
+    }
+    checkOrder(){
+        if(this.start > this.end){
+            let e = end;
+            this.end = this.start;
+            this.start = e;
+        }
+    }
+    start_increment(i){
+        this.start += i;
+        this.checkOrder();
+    }
+    end_increment(i){
+        this.end += i;
+        this.checkOrder();
+    }
+    augment(i = 1){
+        if(i < 1){
+            throw new Error("Invalid augment value :  i = " + i);
+        }
+        this.end_increment(i);
+    }
+    decrease(i = -1){
+        if(i > -1){
+            throw new Error("Invalid decrease value :  i = " + i);
+        }
+        this.end_increment(i);
+    }
+    shift(i){
+        this.end += i;
+        this.start += i;
+    }
     has_intersection_with(interval){
         
         if(interval.start <= this.start && this.start <= interval.end || this.start <= interval.start && interval.start <= this.end)
@@ -348,4 +381,89 @@ class First_In_First_Out_Stack{
         }
     }
     
+}
+
+//This class should contain a abitrary number of intervals.
+//The intervals cannot intersect i don't know. There can be space between intervals
+//When an interval is [augment] or [decrease] the following intervals and only them will be shifted by an equal value.
+class _gd_interval_sector{
+    constructor(){
+        this.intervalArray = [];
+    }
+    addInterall(new_interval = new _gd_interval(0,0)){
+
+        for (let i = 0; i < this.intervalArray.length; ++i){
+            if(this.intervalArray[i].has_intersection_with(new_interval)){
+                throw new Error("Recived interval intersect within interval_sector.\n new_nterval : " + new_interval + " || Interval_sector interval : " + this.intervalArray[i]);
+            }
+
+            if(new_interval.start < this.intervalArray[i].start){
+                this.intervalArray.splice(i, 0, new_interval);
+                //huh...
+                this.updateIds(i);
+                return;
+            }
+        }
+        
+        new_interval.id = this.intervalArray.length;
+        this.intervalArray.push(new_interval);
+        
+    }
+    updateIds(start_at = 0){
+        for(start_at; start_at < this.intervalArray.length; ++start_at){
+            this.intervalArray[start_at].id = start_at;
+        }
+    }
+    augment_interval_i(i){
+        this.intervalArray[i].augment();
+        ++i;
+        for(i; i < this.intervalArray.length; ++i){
+            this.intervalArray[i].shift(1);
+        }
+    }
+
+    decrease_interval_i(i){
+        this.intervalArray[i].decrease();
+        ++i;
+        for(i; i < this.intervalArray.length; ++i){
+            this.intervalArray[i].shift(-1);
+        }
+    }
+    
+    shift_sectors_start_at(i){
+        for(let start = this.intervalArray.length - 1; start >= i ; --start){
+            this.intervalArray[start].shift(1);
+        }   
+    }
+    shift_by_x_sectors_start_at(i, shift_by){
+        if( shift_by < 1){
+            throw new Error("shift_by < 1")
+        }
+        for(let start = this.intervalArray.length - 1; start >= i ; --start){
+            this.intervalArray[start].shift(1, shift_by);
+        }   
+    }
+
+    unshift_sectors_start_at(i){
+        if(i > 0 &&  (this.intervalArray[i].start - 1) ==  this.intervalArray[i - 1].end){
+            throw new Error("Invalid shifting command interval_sector intersect \n." + 
+            "this.intervalArray[i].start - 1) ==  this.intervalArray[i - 1].end : " + (this.intervalArray[i].start - 1) + " == " + his.intervalArray[i - 1].end);
+        }
+        for(i; i < this.intervalArray.length; ++i){
+            this.intervalArray[i].shift(-1);
+        }
+    }
+
+    unshift_by_x_sectors_start_at(i, unshift_by){
+        if( unshift_by > -1){
+            throw new Error("unshift_by > -1")
+        }
+        if(i > 0 &&  (this.intervalArray[i].start + unshift_by) <=  this.intervalArray[i - 1].end){
+            throw new Error("Invalid shifting command interval_sector intersect or fall behind \n." + 
+            "this.intervalArray[i].start + unshift_by) <=  this.intervalArray[i - 1].end : " + (this.intervalArray[i].start + unshift_by) + " <= " + his.intervalArray[i - 1].end);
+        }
+        for(i; i < this.intervalArray.length; ++i){
+            this.intervalArray[i].shift(unshift_by);
+        }
+    }
 }
