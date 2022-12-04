@@ -59,21 +59,35 @@ const vrCursor = {
     up : function(){
         if(this.line > 0){
             --this.line;
+            if(this.index > this.sloted_gd_sandbox_editor.current_line.length - 1){
+                this.index = this.sloted_gd_sandbox_editor.current_line.length;
+            }
         }
     },
     down : function(){ //USE WITH CARE
         if(this.sloted_gd_sandbox_editor.lineCount > this.line + 1){
             ++this.line;
+            if(this.index > this.sloted_gd_sandbox_editor.current_line.length - 1){
+                this.index = this.sloted_gd_sandbox_editor.current_line.length;
+            }
         }
     },
     left : function(){ //USE WITH CARE
         if(this.index > 0){
             --this.index;
         }
+        else if(this.line > 0){
+            --this.line;
+            this.index = this.sloted_gd_sandbox_editor.current_line.length;
+        }
     },
     right : function(){ //USE WITH CARE
         if(this.sloted_gd_sandbox_editor.current_line.length > this.index){
             ++this.index;
+        }
+        else if(this.line < this.sloted_gd_sandbox_editor.lineCount - 1){
+            ++this.line;
+            this.index = 0;
         }
     },
 
@@ -176,13 +190,19 @@ class _gd_sandbox_editor{
     }
     filteredSelector(){
         let selectorCach = this._getSelector();
+        //debugger;
+        let filteredSelector_f_startLine = getValidParent(selectorCach.anchorNode)._line_number;
+        let filteredSelector_f_endLine = getValidParent(selectorCach.focusNode)._line_number;
+
         return {
-            startLine: getValidParent(selectorCach.anchorNode)._line_number,
-            endLine: getValidParent(selectorCach.focusNode)._line_number,
+            startLine: filteredSelector_f_startLine,
+            endLine: filteredSelector_f_endLine,
+
             startIndex: selectorCach.anchorOffset,
             endIndex: selectorCach.focusOffset,
-            multilineSelection: this.startLine != this.endLine,
-            selection: this.startIndex != this.endIndex || this.multilineSelection,
+
+            multilineSelection: filteredSelector_f_startLine != filteredSelector_f_endLine,
+            selection: selectorCach.anchorOffset != selectorCach.focusOffset || filteredSelector_f_startLine != filteredSelector_f_endLine,
         }
     }
     get anchorNode(){
@@ -214,7 +234,7 @@ class _gd_sandbox_editor{
             if(selection.isCollapsed){
 
                 //if(!isNaN(selection.anchorNode.parentNode._line_number))
-                    return getValidParent(selection.anchorNode).dataset._line_number;
+                    return getValidParent(selection.anchorNode)._line_number;
                 
                 return selection.anchorNode._line_number;
             }
@@ -671,6 +691,7 @@ class _gd_sandbox_editor{
         }
     }
     deleteLine(lineNumber){//VF_1
+        //debugger;
         if(lineNumber < 0 || lineNumber >= this.lineCount)
             return false;
         this._lineArray[lineNumber].delete();
@@ -683,13 +704,15 @@ class _gd_sandbox_editor{
         console.log("deleteSelection");
         if(!selection.selection){
             console.log("deleteSelection no selection");
+            console.log(selection);
             return;
         }
         if(selection.startLine != selection.endLine){
+            //Multiple splice
             for(let i = selection.startLine  + 1; i < selection.endLine; ++i){
                 this.deleteLine(i);
             }
-
+            debugger;
             if(selection.startLine < selection.endLine){
                 this._lineArray[selection.startLine].deleteFromTo(selection.startIndex, this._lineArray[selection.startLine].length - 1);
                 this._lineArray[selection.endLine].deleteFromTo(0,selection.endIndex);
@@ -915,7 +938,7 @@ class _line{
         return this.basicTextData.length;
     }
     setLineNumber(lineNumber){
-        
+        //debugger;
         this.uiElement.dataset._line_number = lineNumber;
         this.uiElement._line_number = lineNumber;
         this._line_number = lineNumber;
