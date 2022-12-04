@@ -1,6 +1,21 @@
 'use strict';
 
 const vrCursor = {
+    sloted_gd_sandbox_editor : {},
+    editor_slothed : false,
+    slothEditor : function(editor){
+        if(editor instanceof _gd_sandbox_editor){
+            if(this.editor_slothed){
+                this.sloted_gd_sandbox_editor.slothed_in_vrCursor = false;   
+            }
+            this.sloted_gd_sandbox_editor = editor;
+            this.editor_slothed = true;
+            this.sloted_gd_sandbox_editor.slothed_in_vrCursor = true;
+        }
+        else{
+            console.warn("editor instanceof _gd_sandbox_editor  == false");
+        }
+    },
     line : 0,
     index : 0,
     _lineOffset: 0,
@@ -11,7 +26,11 @@ const vrCursor = {
         this._apply_lineOffset();
         this._apply_indexOffset();
     },
-    reset : function(){
+    reset : function(editor){
+        if(editor !== this.sloted_gd_sandbox_editor){
+            throw new Error("editor !== this.sloted_gd_sandbox_editor");
+            return;
+        }
         this.line = 0;
         this.index = 0;
         this._lineOffset = 0;
@@ -28,8 +47,39 @@ const vrCursor = {
             default: return;
         }
     },
+    update : function(element){
+        switch(element){
+            case "index":
+                this.index = currentSelection.anchorOffset;
+            case "carret":
+                this.sloted_gd_sandbox_editor.__updateCursorPosition();
+            default: return;
+        }
+    },
+    up : function(){
+        if(this.line > 0){
+            --this.line;
+        }
+    },
+    down : function(){ //USE WITH CARE
+        if(this.sloted_gd_sandbox_editor.lineCount > this.line + 1){
+            ++this.line;
+        }
+    },
+    left : function(){ //USE WITH CARE
+        if(this.index > 0){
+            --this.index;
+        }
+    },
+    right : function(){ //USE WITH CARE
+        if(this.sloted_gd_sandbox_editor.current_line.length > this.index){
+            ++this.index;
+        }
+    },
 
 }
+vrCursor.updateFrom = vrCursor.updateFrom.bind(vrCursor);
+vrCursor.update = vrCursor.update.bind(vrCursor);
 
 
 //@GDn&p+gbg
@@ -40,7 +90,11 @@ class _gd_sandbox_editor{
         this._editor = document.createElement("pre");
         this._editor.className = "editor";
         this._editor.contentEditable = true;
-        vrCursor.reset();
+
+        this.slothed_in_vrCursor = false;
+        vrCursor.slothEditor(this);
+        vrCursor.reset(this);
+        
         
         this.keyAction = this.keyAction.bind(this);
 
@@ -348,7 +402,10 @@ class _gd_sandbox_editor{
         this._lineArray[line].insertString(printValue,index);
         ++vrCursor.index;
         //debugger;
-        this.setCursorPosition(this._lineArray[line].uiElement, index);
+        this.setCursorPosition(this._lineArray[line].uiElement, index + 1);
+    }
+    get current_line(){
+        return this._lineArray[vrCursor.line];
     }
     __print_brut(printValue, index = vrCursor.index, line = vrCursor.line){
         console.log(line);
@@ -358,6 +415,38 @@ class _gd_sandbox_editor{
         this._lineArray[line].insertBrutContent(printValue,index);
         ++vrCursor.index;
         this.setCursorPosition(this._lineArray[line].uiElement, index);
+    }
+    __updateCursorPosition(){
+        this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+    }
+    backspace(){
+        --vrCursor.index
+        this._lineArray[vrCursor.line].backspace(vrCursor.index);
+        
+        this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+    }
+    moveCursorLeft(x){
+        if(x > vrCursor.index){
+            x -= vrCursor.index;
+            //vrCursor.line
+        }
+        this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+    }
+    ArrowLeft(){
+        vrCursor.left();
+        this.__updateCursorPosition();
+    }
+    ArrowRight(){
+        vrCursor.right();
+        this.__updateCursorPosition();
+    }
+    ArrowUp(){
+        vrCursor.up();
+        this.__updateCursorPosition();
+    }
+    ArrowDown(){
+        vrCursor.down();
+        this.__updateCursorPosition();
     }
     /*// print xor wrap xor specialAction ?? or...
     keyAction options = {
@@ -381,8 +470,14 @@ class _gd_sandbox_editor{
         this.addKeyAction("Shift", {specialAction: true, specialFunction: function(){
             alert("SPE");
         }.bind(this)});
+        
+        this.addKeyAction("ArrowLeft", {specialAction: true, specialFunction: this.ArrowLeft.bind(this)});
+        this.addKeyAction("ArrowRight", {specialAction: true, specialFunction: this.ArrowRight.bind(this)});
+        this.addKeyAction("ArrowUp", {specialAction: true, specialFunction: this.ArrowUp.bind(this)});
+        this.addKeyAction("ArrowDown", {specialAction: true, specialFunction: this.ArrowDown.bind(this)});
 
         this.addKeyAction("Tab", {printKey: true, printValue: "  "});
+        this.addKeyAction("Backspace", {specialAction: true, specialFunction: this.backspace.bind(this)});
         this.addKeyAction("{", {
             printKey: true, printValue: "{}",
             wrapText: true, beforeWrapValue:"{", afterWrapValue:"}",
@@ -418,6 +513,7 @@ class _gd_sandbox_editor{
             _slot_keyAction_call();
             let key = this.keyActionMap.get(keyboardEvent.key);
             console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
+            keyboardEvent.preventDefault();
             if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
                 keyboardEvent.preventDefault();
                 this.deleteSelection();
@@ -474,11 +570,12 @@ class _gd_sandbox_editor{
 
                 }
             }
-            vrCursor.updateFrom("anchor_selection");
+            
+            //vrCursor.updateFrom("anchor_selection");
 
             
 
-            //_slot_keyAction_add(vrCursor.updateFrom, "anchor_selection");
+            _slot_keyAction_add(vrCursor.updateFrom, "anchor_selection");
             
             //alert(keyboardEvent.key);*/
 
@@ -797,6 +894,8 @@ class _line{
         this.highlightSetup();
         this.basicTextData = "";//initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
         
+        // this.basicTextData IS main plain text
+        // only plain text for now
         
 
         this._text_data = "";
@@ -807,6 +906,9 @@ class _line{
         this.fixedChildListFixedCount = 0;
         this.childListPresentSet = new Set();
         this.textNodeList = [];
+
+        this.textNodeList.push(new Text(""));
+        this.uiElement.appendChild(this.textNodeList[0]);
     }
     
     get length(){
@@ -825,7 +927,7 @@ class _line{
     __setText(text){
 
         this.basicTextData = text;
-        this.fixChildList();
+        
         this.recomputeUiElement();
     }
     //NO DATA CHECK
@@ -839,7 +941,7 @@ class _line{
     addString(string){
         console.log("ADD STRING");
         this.basicTextData = this.basicTextData.concat(string);
-        this.fixChildList();
+        
         this.recomputeUiElement();
     }
     
@@ -852,7 +954,7 @@ class _line{
         index = index % (this.basicTextData.length + 1);
 
         this.basicTextData = basicTextData.substring(0, index) + string + basicTextData.substring(index);
-        this.fixChildList();
+        
         this.recomputeUiElement();
         return this.uiElement;
     }
@@ -875,11 +977,6 @@ class _line{
     recomputeUiElement(){
 
 
-        //let text = this.filledTextNode(this.textData);
-        //text.dataset._line_number = this._line_number;
-        
-        
-        //this.textn.replaceData(0, this.textn.length, this.basicTextData);
         console.log(this.textn);
         if(this.textNodeList.length == 0){
             this.textNodeList.push(new Text(""));
@@ -888,12 +985,8 @@ class _line{
         this.textNodeList[0].replaceData(0, this.textNodeList[0].length, this.basicTextData);
         
         console.log(this.textn);
-        //this.brutContent = "<span class='blue'>" +this.basicTextData +"<span>";
-        this.applyBrutContent();
     }
-    applyBrutContent(){
-        //this.uiElement.append(this.brutContent);
-    }
+    
     wrapText(startIndex, startString, endIndex, endString){
         /**
          * 
@@ -904,7 +997,7 @@ class _line{
          let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
          startIndex = orderedIndex.a, endIndex = orderedIndex.b;
          this.basicTextData = basicTextData.substring(0, startIndex) + startString + basicTextData.substring(startIndex, endIndex) + endString + basicTextData.substring(endIndex);
-         this.fixChildList();
+         
 
     }
     filledTextNode(text){
@@ -915,7 +1008,7 @@ class _line{
     }
     set brutContent(newBrutContent){
         this.uiElement.innerHTML = newBrutContent;
-        this.fixChildList();
+        
     }
     // can break the _line object
     insertBrutContent(brutString, index){
@@ -923,30 +1016,13 @@ class _line{
         index = index % (this.brutContent.length + 1);
 
         this.brutContent = brutContent.substring(0, index) + brutString + brutContent.substring(index);
-        this.fixChildList();
-        this.applyBrutContent();
+        
     }
 
     getBrutContent(){
 
     }
-
-    //Why did i write this?
-    // to-do
-    fixChildList(){
-        /*this.childListFixedSet = [];
-        console.log(this.uiElement.childNodes);
-        if(this.uiElement.childNodes.length != 2){
-            this.uiElement.childNodes.forEach(node => 
-                this.childListFixedSet.push(node.nodeName)
-                );
-            //this.uiElement.innerHTML = this.uiElement.innerText + "<br>"
-            ++this.fixedChildListFixedCount;
-            console.log(this.fixedChildListFixedCount);
-            console.log(this.childListPresentSet);
-        }*/
-
-    }
+    
     wrapBrutContent(startIndex, startContent, endIndex, endContent){
         /**
          * 
@@ -957,9 +1033,6 @@ class _line{
          let orderedIndex = this._brut__orderAndCheckIndex(startIndex, endIndex);
          startIndex = orderedIndex.a, endIndex = orderedIndex.b;
          this.brutContent = brutContent.substring(0, startIndex) + startContent + brutContent.substring(startIndex, endIndex) + endContent + brutContent.substring(endIndex);
-         
-        this.applyBrutContent();
-
     }
     
 
@@ -1014,6 +1087,15 @@ class _line{
         this.basicTextData = this.basicTextData.substring(0, start) + this.basicTextData.substring(end);
         
     }
+    backspace(index){
+        if(this.length > 0){
+            this.basicTextData = this.basicTextData.substring(0, index) + this.basicTextData.substring(index + 1);
+
+            this.recomputeUiElement();
+            return true;
+        }
+        return false;
+    }
 
     sectorsSetup(){
         this._texte_sector = new _gd_interval_sector();
@@ -1051,7 +1133,14 @@ class _line{
     }
     cursorToIndex(selection = window.getSelection(), index = this.length){
         console.log(index);
-        selection.collapse(this.uiElement, index);
+        try{
+            selection.collapse(this.textNodeList[0], index);
+        }
+        catch(error){
+            console.error(error);
+            selection.collapse(this.uiElement, index);
+        }
+        
     }
 }
 
@@ -1114,4 +1203,8 @@ function interval(intervalArray = INTERVAL_ARRAY){
             intervallMap.set(interval[1], [index]);
     })
     return intervallMap;
+}
+
+function h_test(str){
+    txtdata.search(str);
 }

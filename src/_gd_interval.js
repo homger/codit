@@ -404,11 +404,32 @@ class _gd_interval_sector{
                 return;
             }
         }
-        
         new_interval.id = this.intervalArray.length;
         this.intervalArray.push(new_interval);
-        
     }
+
+    get_interval_including_x(x){
+        for(let i = 0; i < this.intervalArray.length; ++i){
+            if(x <= this.intervalArray[i].end){
+                return this.intervalArray[i];
+            }
+        }
+
+        console.warn("No interval including x found. x = " + x);
+        return undefined;
+    }
+
+    sectorMapSetup(){
+        this.sectorMap = new Map();
+        this.intervalArray.forEach((interval) => {
+            
+            for(let i = interval.start; i <= interval.end; ++i){
+                this.sectorMap.set(i, interval);
+            }
+            
+        });
+    }
+
     updateIds(start_at = 0){
         for(start_at; start_at < this.intervalArray.length; ++start_at){
             this.intervalArray[start_at].id = start_at;
