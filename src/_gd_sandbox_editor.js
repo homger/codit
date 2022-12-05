@@ -117,12 +117,13 @@ class _gd_sandbox_editor{
         this.lineCount = 0;
         this.newLine = this.newLine.bind(this);
         this.insertLine = this.insertLine.bind(this);
+        //this.deleteSelection = this.deleteSelection.bind(this);
 
         this.focusedLine = -1;
         
         this.copyPastSetup();
         this.keyActionSetup();
-        this.mutationObserverSetup();
+        //this.mutationObserverSetup(); Useless for now
         
         /*this._editor.addEventListener("keyup", function(){
             this._file.content = this._editor.textContent;
@@ -272,6 +273,7 @@ class _gd_sandbox_editor{
 
         
         // this._lineArray ver
+        
         return this._lineArray[selection.anchorNode.parentNode._line_number] === selection.anchorNode.parentNode._gd_line && 
         this._lineArray[selection.focusNode.parentNode._line_number] === selection.focusNode.parentNode._gd_line;
     }
@@ -707,28 +709,40 @@ class _gd_sandbox_editor{
             console.log(selection);
             return;
         }
-        if(selection.startLine != selection.endLine){
+            
+        let startLine = selection.startLine;
+        let endLine = selection.endLine;
+        let startIndex = selection.startIndex;
+        let endIndex = selection.endIndex;
+        if(startLine > endLine){
+            startLine = endLine;
+            endLine = selection.startLine;
+
+            startIndex = endIndex;
+            endIndex = selection.startIndex;
+        }
+        else if(startIndex > endIndex){
+            startIndex = endIndex;
+            endIndex = selection.startIndex;
+        }
+        if(startLine != endLine){
             //Multiple splice
-            for(let i = selection.startLine  + 1; i < selection.endLine; ++i){
+            for(let i = startLine  + 1; i < endLine; ++i){
                 this.deleteLine(i);
+                --endLine;
             }
-            debugger;
-            if(selection.startLine < selection.endLine){
-                this._lineArray[selection.startLine].deleteFromTo(selection.startIndex, this._lineArray[selection.startLine].length - 1);
-                this._lineArray[selection.endLine].deleteFromTo(0,selection.endIndex);
-            }
-            else{
-                this._lineArray[selection.endLine].deleteFromTo(selection.endIndex, this._lineArray[selection.endLine].length - 1);
-                this._lineArray[selection.startLine].deleteFromTo(0,selection.startIndex);
-            }
+            //debugger;
+            
+            this._lineArray[startLine].deleteFromTo(startIndex, this._lineArray[startLine].length);
+            this._lineArray[endLine].deleteFromTo(0,endIndex);
         }
         else{
             
-            this._lineArray[selection.startLine].deleteFromTo(selection.startIndex, selection.endIndex);
+            this._lineArray[startLine].deleteFromTo(startIndex, endIndex);
         }
         if(ajustCursor){
-            vrCursor.line = selection.startLine < selection.endLine ? selection.startLine : selection.endLine;
-            vrCursor.index = selection.startIndex < selection.endIndex ? selection.startIndex : selection.endIndex;
+            vrCursor.line = startLine;
+            vrCursor.index = startIndex;
         }
     }
     lineMutationFonction(mutationRecordArray, mutationObserver){
@@ -1099,6 +1113,7 @@ class _line{
         this.dismountUI();
     }
     deleteFromTo(a,b){
+        //delete from a to b (char n°a is also deleted char n°b is not deleted)
         console.log("FUNCTION CALL: deleteFromTo(a,b)");
         let order = this.__orderAndCheckIndex(a,b);
         let start = order.a, end = order.b;
@@ -1108,6 +1123,7 @@ class _line{
             return;
         }
         this.basicTextData = this.basicTextData.substring(0, start) + this.basicTextData.substring(end);
+        this.recomputeUiElement();
         
     }
     backspace(index){
