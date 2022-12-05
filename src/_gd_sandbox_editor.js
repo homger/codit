@@ -118,6 +118,9 @@ class _gd_sandbox_editor{
         this.newLine = this.newLine.bind(this);
         this.insertLine = this.insertLine.bind(this);
         //this.deleteSelection = this.deleteSelection.bind(this);
+        
+        this.__filteredSelectorObjectUpToDate = false;
+        this.__filteredSelectorObject = null;
 
         this.focusedLine = -1;
         
@@ -140,6 +143,7 @@ class _gd_sandbox_editor{
 
         this.uiElement = this._editor;
 
+        
     }
     onFocus(){
         if(this.lineCount == 0){
@@ -189,13 +193,17 @@ class _gd_sandbox_editor{
         //return Error(" document.activeElement === this._editor is false");
         return undefined;
     }
-    filteredSelector(){
+    
+    filteredSelector(forceUpdate = false){
+        if(!forceUpdate && this.__filteredSelectorObjectUpToDate){
+            return this.__filteredSelectorObject;
+        }
         let selectorCach = this._getSelector();
         //debugger;
         let filteredSelector_f_startLine = getValidParent(selectorCach.anchorNode)._line_number;
         let filteredSelector_f_endLine = getValidParent(selectorCach.focusNode)._line_number;
 
-        return {
+        this.__filteredSelectorObject =  {
             startLine: filteredSelector_f_startLine,
             endLine: filteredSelector_f_endLine,
 
@@ -205,6 +213,9 @@ class _gd_sandbox_editor{
             multilineSelection: filteredSelector_f_startLine != filteredSelector_f_endLine,
             selection: selectorCach.anchorOffset != selectorCach.focusOffset || filteredSelector_f_startLine != filteredSelector_f_endLine,
         }
+
+        this.__filteredSelectorObjectUpToDate = true;
+        return this.__filteredSelectorObject;
     }
     get anchorNode(){
         return this._getSelector().anchorNode;
@@ -442,6 +453,10 @@ class _gd_sandbox_editor{
         this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
     }
     backspace(){
+        if(this.filteredSelector().selection){
+            this.deleteSelection();
+            return;
+        }
         --vrCursor.index
         this._lineArray[vrCursor.line].backspace(vrCursor.index);
         
@@ -531,8 +546,11 @@ class _gd_sandbox_editor{
     }
     
     keyAction(keyboardEvent){
-
+            
             _slot_keyAction_call();
+
+            
+
             let key = this.keyActionMap.get(keyboardEvent.key);
             console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
             keyboardEvent.preventDefault();
@@ -541,16 +559,15 @@ class _gd_sandbox_editor{
                 this.deleteSelection();
                 this.__print(keyboardEvent.key);
                 console.log("to basic data:  " + keyboardEvent.key);
-                return;
             }
-            console.log("VR C INDEX UPDATE: " + vrCursor.index);
+            //console.log("VR C INDEX UPDATE: " + vrCursor.index);
             /*if(key === undefined){
                 console.log(keyboardEvent.key);
                 keyboardEvent.preventDefault();
                 return;
             }*/
 
-            if(key){
+            else if(key){
                 
             
                 if(this.selectionActive){
@@ -558,37 +575,29 @@ class _gd_sandbox_editor{
                         keyboardEvent.preventDefault();
                         if(key.printBrut){
                             this.__wrapSelection_brut(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
-                            return;
                         }
                         this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
-                        return;
                     }
-                    if(key.printKey){
+                    else if(key.printKey){
                         keyboardEvent.preventDefault();
                         this.deleteSelection();
                         if(key.printBrut){
                             this.__print_brut(key.printValue);
-                            return;
                         }
                         this.__print(key.printValue);
-                        return;
                     }
-                    if(key.specialAction){
+                    else if(key.specialAction){
                         keyboardEvent.preventDefault();
                         key.specialFunction();
-                        return;
                     }
-                    return;
                 }
-                if(key.printKey){
+                else if(key.printKey){
                     keyboardEvent.preventDefault();
                     this.__print(key.printValue);
-                    return;
                 }
-                if(key.specialAction){
+                else if(key.specialAction){
                     keyboardEvent.preventDefault();
                     key.specialFunction();
-                    return;
 
                 }
             }
@@ -599,6 +608,7 @@ class _gd_sandbox_editor{
 
             _slot_keyAction_add(vrCursor.updateFrom, "anchor_selection");
             
+            this.__filteredSelectorObjectUpToDate = false;
             //alert(keyboardEvent.key);*/
 
     }
@@ -735,6 +745,15 @@ class _gd_sandbox_editor{
             
             this._lineArray[startLine].deleteFromTo(startIndex, this._lineArray[startLine].length);
             this._lineArray[endLine].deleteFromTo(0,endIndex);
+
+            this._lineArray[startLine].appendLine(this._lineArray[endLine]);
+            this.deleteLine(endLine);
+            //--endLine;
+            /*if(this._lineArray[endLine].length == 0){
+                this.deleteLine(endLine);
+                --endLine;
+            }*/
+
         }
         else{
             
@@ -743,6 +762,8 @@ class _gd_sandbox_editor{
         if(ajustCursor){
             vrCursor.line = startLine;
             vrCursor.index = startIndex;
+
+            vrCursor.update("carret");
         }
     }
     lineMutationFonction(mutationRecordArray, mutationObserver){
@@ -981,7 +1002,18 @@ class _line{
         
         this.recomputeUiElement();
     }
-    
+    prependLine(line){
+        this.isLine_crash(line);
+
+        this.basicTextData = line.basicTextData + this.basicTextData;
+        this.recomputeUiElement;
+    }
+    appendLine(line){
+        this.isLine_crash(line);
+
+        this.basicTextData += line.basicTextData;
+        this.recomputeUiElement;
+    }
     insertString(string, index){
         if(index == this.length){
             this.addString(string);
@@ -1181,6 +1213,16 @@ class _line{
         }
         
     }
+    isLine(supposed_line){
+        return supposed_line instanceof _line;
+    }
+    isLine_crash(supposed_line){
+        if(!this.isLine(supposed_line)){
+            throw new Error("argument is not instanceof _line");
+        }
+        //return supposed_line instanceof _line;
+    }
+    
 }
 
 function getValidParent(node){
