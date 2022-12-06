@@ -379,24 +379,37 @@ class _gd_sandbox_editor{
             this._lineArray[lineNumber].insertString(text, index);
         }
     }
-    __wrapSelection(selection, startPrintValue, endPrintValue){
+    __wrapSelection(selector = this.filteredSelector(), startPrintValue, endPrintValue){
         console.log("Will wrap")
-        if(this.selectionIsValid(selection)){
-            let anchorOffset = selection.anchorOffset, focusOffset = selection.focusOffset;
-            console.log("WRAP anchorOffset    :  " + anchorOffset);
-            console.log("WRAP focusOffset    :  " + focusOffset);
-            if(selection.anchorNode === selection.focusNode){
-                this._lineArray[selection.anchorNode.parentNode._line_number].wrapText(anchorOffset, startPrintValue, focusOffset, endPrintValue);
-                return;
+        if(selector.selection){
+            let startLine = selector.startLine;
+            let endLine = selector.endLine;
+            let startIndex = selector.startIndex;
+            let endIndex = selector.endIndex;
+
+            if(startLine > endLine){
+                startLine = endLine;
+                endLine = selection.startLine;
+    
+                startIndex = endIndex;
+                endIndex = selection.startIndex;
             }
-            //debugger;
-            if(selection.anchorNode.parentNode._line_number > selection.focusNode.parentNode._line_number){
-                this._lineArray[selection.focusNode.parentNode._line_number].insertString(startPrintValue, selection.focusOffset);
-                this._lineArray[selection.anchorNode.parentNode._line_number].insertString(endPrintValue, selection.anchorOffset);
-                return;
+            else if(startIndex > endIndex){
+                startIndex = endIndex;
+                endIndex = selection.startIndex;
             }
+
+            if(!selector.multilineSelection){
+                this._lineArray[startLine].wrapText(startIndex, startPrintValue, endIndex, endPrintValue);
+            }
+            else{
+                this._lineArray[startLine].insertString(startPrintValue, startIndex);
+                this._lineArray[endLine].insertString(endPrintValue, endIndex);
+            }
+
+            /*
             this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset);
-            this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset);
+            this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset);*/
         }
         console.log();
     }
@@ -455,12 +468,14 @@ class _gd_sandbox_editor{
     backspace(){
         if(this.filteredSelector().selection){
             this.deleteSelection();
-            return;
+            
         }
-        --vrCursor.index
-        this._lineArray[vrCursor.line].backspace(vrCursor.index);
-        
-        this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+        else{
+            --vrCursor.index
+            this._lineArray[vrCursor.line].backspace(vrCursor.index);
+            
+            this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+        }
     }
     moveCursorLeft(x){
         if(x > vrCursor.index){
@@ -554,20 +569,7 @@ class _gd_sandbox_editor{
             let key = this.keyActionMap.get(keyboardEvent.key);
             console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
             keyboardEvent.preventDefault();
-            if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
-                keyboardEvent.preventDefault();
-                this.deleteSelection();
-                this.__print(keyboardEvent.key);
-                console.log("to basic data:  " + keyboardEvent.key);
-            }
-            //console.log("VR C INDEX UPDATE: " + vrCursor.index);
-            /*if(key === undefined){
-                console.log(keyboardEvent.key);
-                keyboardEvent.preventDefault();
-                return;
-            }*/
-
-            else if(key){
+            if(key){
                 
             
                 if(this.selectionActive){
@@ -576,7 +578,10 @@ class _gd_sandbox_editor{
                         if(key.printBrut){
                             this.__wrapSelection_brut(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
                         }
-                        this.__wrapSelection(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
+                        else{
+                            this.__wrapSelection(this.filteredSelector(), key.beforeWrapValue, key.afterWrapValue);
+                        }
+                        
                     }
                     else if(key.printKey){
                         keyboardEvent.preventDefault();
@@ -584,7 +589,10 @@ class _gd_sandbox_editor{
                         if(key.printBrut){
                             this.__print_brut(key.printValue);
                         }
-                        this.__print(key.printValue);
+                        else{
+                            this.__print(key.printValue);
+                        }
+                        
                     }
                     else if(key.specialAction){
                         keyboardEvent.preventDefault();
@@ -600,6 +608,12 @@ class _gd_sandbox_editor{
                     key.specialFunction();
 
                 }
+            }
+            else if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
+                keyboardEvent.preventDefault();
+                this.deleteSelection();
+                this.__print(keyboardEvent.key);
+                console.log("to basic data:  " + keyboardEvent.key);
             }
             
             //vrCursor.updateFrom("anchor_selection");
@@ -1006,13 +1020,13 @@ class _line{
         this.isLine_crash(line);
 
         this.basicTextData = line.basicTextData + this.basicTextData;
-        this.recomputeUiElement;
+        this.recomputeUiElement();
     }
     appendLine(line){
         this.isLine_crash(line);
 
         this.basicTextData += line.basicTextData;
-        this.recomputeUiElement;
+        this.recomputeUiElement();
     }
     insertString(string, index){
         if(index == this.length){
@@ -1063,9 +1077,10 @@ class _line{
          */
 
          let basicTextData = this.basicTextData;
-         let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
-         startIndex = orderedIndex.a, endIndex = orderedIndex.b;
+         /*let orderedIndex = this.__orderAndCheckIndex(startIndex, endIndex);
+         startIndex = orderedIndex.a, endIndex = orderedIndex.b;*/
          this.basicTextData = basicTextData.substring(0, startIndex) + startString + basicTextData.substring(startIndex, endIndex) + endString + basicTextData.substring(endIndex);
+         this.recomputeUiElement();
          
 
     }
