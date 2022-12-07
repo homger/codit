@@ -125,6 +125,7 @@ class _gd_sandbox_editor{
         this.focusedLine = -1;
         
         this.copyPastSetup();
+        this.keyActionExceptionSetup();
         this.keyActionSetup();
         //this.mutationObserverSetup(); Useless for now
         
@@ -389,14 +390,14 @@ class _gd_sandbox_editor{
 
             if(startLine > endLine){
                 startLine = endLine;
-                endLine = selection.startLine;
+                endLine = selector.startLine;
     
                 startIndex = endIndex;
-                endIndex = selection.startIndex;
+                endIndex = selector.startIndex;
             }
             else if(startIndex > endIndex){
                 startIndex = endIndex;
-                endIndex = selection.startIndex;
+                endIndex = selector.startIndex;
             }
 
             if(!selector.multilineSelection){
@@ -514,12 +515,19 @@ class _gd_sandbox_editor{
         preventDefault: false,
     }
     */
-   
-    keyActionSetup(){
+    keyActionExceptionSetup(){
+        this.keyActionExceptionMap = new Map();
 
+        this.addKeyActionException("F5");
+
+    }
+    addKeyActionException(keyValue){
+        this.keyActionExceptionMap.set(keyValue, null);
+    }
+    keyActionSetup(){
         this.keyActionMap = new Map();
 
-        this.addKeyAction("Shift", {specialAction: true, specialFunction: function(){
+        this.addKeyAction("Shift__", {specialAction: true, specialFunction: function(){
             alert("SPE");
         }.bind(this)});
         
@@ -565,10 +573,10 @@ class _gd_sandbox_editor{
             _slot_keyAction_call();
 
             
-
+            //debugger;
             let key = this.keyActionMap.get(keyboardEvent.key);
             console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
-            keyboardEvent.preventDefault();
+            //keyboardEvent.preventDefault();
             if(key){
                 
             
@@ -615,7 +623,9 @@ class _gd_sandbox_editor{
                 this.__print(keyboardEvent.key);
                 console.log("to basic data:  " + keyboardEvent.key);
             }
-            
+            else if(!this.keyActionExceptionMap.has(keyboardEvent.key)){
+                keyboardEvent.preventDefault();
+            }
             //vrCursor.updateFrom("anchor_selection");
 
             
