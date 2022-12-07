@@ -117,6 +117,7 @@ class _gd_sandbox_editor{
         this.lineCount = 0;
         this.newLine = this.newLine.bind(this);
         this.insertLine = this.insertLine.bind(this);
+        this.splitLine = this.splitLine.bind(this);
         //this.deleteSelection = this.deleteSelection.bind(this);
         
         this.__filteredSelectorObjectUpToDate = false;
@@ -441,15 +442,15 @@ class _gd_sandbox_editor{
         }
         console.log();
     }
-    __print(printValue, index = vrCursor.index, line = vrCursor.line){
+    __print(printValue, cursorOffset = 0, index = vrCursor.index, line = vrCursor.line){
         console.log(line);
         /*if(line === undefined){
             line = this.anchorNode._line_number;
         }*/
         this._lineArray[line].insertString(printValue,index);
-        ++vrCursor.index;
+        index += printValue.length;
         //debugger;
-        this.setCursorPosition(this._lineArray[line].uiElement, index + 1);
+        this.setCursorPosition(this._lineArray[line].uiElement, index);
     }
     get current_line(){
         return this._lineArray[vrCursor.line];
@@ -506,7 +507,8 @@ class _gd_sandbox_editor{
         printKey: false,
         printValue: "",
         printBrut: false,
-        cursorOffset: 0,
+        cursorOffset: 0, //don't use
+        additionalOffset: 0,
         specialAction: false,
         specialFunction: function(textArea){},
         wrapText: false,
@@ -519,6 +521,7 @@ class _gd_sandbox_editor{
         this.keyActionExceptionMap = new Map();
 
         this.addKeyActionException("F5");
+        this.addKeyActionException("F12");
 
     }
     addKeyActionException(keyValue){
@@ -553,9 +556,10 @@ class _gd_sandbox_editor{
             wrapText: true, beforeWrapValue:"(", afterWrapValue:")",
             cursorOffset: -1});
         //this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
-        this.addKeyAction("Enter", {specialAction: true, specialFunction: this.insertLine});
-        this.addKeyAction("___________Control", {specialAction: true, specialFunction: function(){
-            this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
+        this.addKeyAction("Enter", {specialAction: true, specialFunction: this.splitLine});
+        this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
+            //this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
+            this.insertLine();
         }.bind(this)});
         this.addKeyAction("²", {
             printKey: true, printValue: "<special></special>", printBrut: true,
@@ -609,7 +613,13 @@ class _gd_sandbox_editor{
                 }
                 else if(key.printKey){
                     keyboardEvent.preventDefault();
-                    this.__print(key.printValue);
+                    //debugger;
+                    if(key.cursorOffset){
+                        this.__print(key.printValue, key.cursorOffset);
+                    }
+                    else{
+                        this.__print(key.printValue);
+                    }
                 }
                 else if(key.specialAction){
                     keyboardEvent.preventDefault();
@@ -620,6 +630,7 @@ class _gd_sandbox_editor{
             else if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
                 keyboardEvent.preventDefault();
                 this.deleteSelection();
+                //debugger;
                 this.__print(keyboardEvent.key);
                 console.log("to basic data:  " + keyboardEvent.key);
             }
@@ -651,14 +662,21 @@ class _gd_sandbox_editor{
         console.log(this.lineCount);
         //this.updateUi();
     }
-    
-    insertLine(line = new _line(""), index = this.focusedLine){
+    splitLine(splitIndex = this.filteredSelector().startIndex, lineNumber = this.filteredSelector().startLine){
+        if(lineNumber < 0 || lineNumber >= this.lineCount)
+            throw new Error("index < 0 || index >= this.lineCount");
+        
+            //debugger;
+        let newLine = this._lineArray[lineNumber].splitLine_returnLine(splitIndex);
+        this.insertLine(newLine, lineNumber);
+    }
+    insertLine(line = new _line(""), index = this.filteredSelector().startLine){
         // alert(); 
         //debugger;
         if(index < 0 || index >= this.lineCount)
             return false;
         //debugger;
-        if(this._lineArray[index].textData == ""){
+        if(false && this._lineArray[index].textData == ""){
 
 
 
@@ -974,14 +992,14 @@ class _line{
 
         //***to-do for mutiline textwrap */
         this.highlightSetup();
-        this.basicTextData = "";//initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
+        this.basicTextData = initialStringValue;//initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
         
         // this.basicTextData IS main plain text
         // only plain text for now
         
 
-        this._text_data = "";
-        this.brutContent = this.basicTextData;
+        
+        //this.brutContent = this.basicTextData;
         //this.uiElement.appendChild(document.createElement("br"));
         
         //this.updateUi()
@@ -989,7 +1007,7 @@ class _line{
         this.childListPresentSet = new Set();
         this.textNodeList = [];
 
-        this.textNodeList.push(new Text(""));
+        this.textNodeList.push(new Text(this.basicTextData));
         this.uiElement.appendChild(this.textNodeList[0]);
     }
     
@@ -1037,6 +1055,20 @@ class _line{
 
         this.basicTextData += line.basicTextData;
         this.recomputeUiElement();
+    }
+    splitLine_returnLine(index){
+        let tempLine = new _line (this.basicTextData.substring(index));
+        this.basicTextData = this.basicTextData.substring(0, index);
+
+        this.recomputeUiElement();
+        return tempLine;
+    }
+    splitLine_returnString(index){
+        let tempLine = this.basicTextData.substring(index);
+        this.basicTextData = this.basicTextData.substring(0, index);
+
+        this.recomputeUiElement();
+        return tempLine;
     }
     insertString(string, index){
         if(index == this.length){
