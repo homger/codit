@@ -515,13 +515,20 @@ class _gd_sandbox_editor{
         beforeWrapValue:"",
         afterWrapValue:"",
         preventDefault: false,
+        keyCombination: false,
     }
     */
+    
+    keyCombinationSetup(){
+        this.keyCombinationMap = new Map();
+        this.keyCombinationDown = 0;
+    }
     keyActionExceptionSetup(){
         this.keyActionExceptionMap = new Map();
 
         this.addKeyActionException("F5");
         this.addKeyActionException("F12");
+        
 
     }
     addKeyActionException(keyValue){
@@ -557,7 +564,7 @@ class _gd_sandbox_editor{
             cursorOffset: -1});
         //this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.splitLine});
-        this.addKeyAction("Control", {specialAction: true, specialFunction: function(){
+        this.addKeyAction("__Control", {specialAction: true, specialFunction: function(){
             //this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
             this.insertLine();
         }.bind(this)});
