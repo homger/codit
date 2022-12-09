@@ -104,6 +104,7 @@ class _gd_sandbox_editor{
         this._editor = document.createElement("pre");
         this._editor.className = "editor";
         this._editor.contentEditable = true;
+        this._editor._gdm_editor = true;
 
         this.slothed_in_vrCursor = false;
         vrCursor.slothEditor(this);
@@ -504,6 +505,22 @@ class _gd_sandbox_editor{
         vrCursor.down();
         this.__updateCursorPosition();
     }
+    selectAll(){
+        this._getSelector().addRange(this.createRange(0,0,this.lineCount - 1, this._lineArray[this.lineCount - 1].length - 1));
+    }
+
+    createRange(startLine, startIndex, endLine, endIndex){
+        if(startLine < 0 || endLine >= this.lineCount){
+            throw new Error("startLine < 0 || endLine >= this.lineCount");
+        }
+        
+        //debugger;
+        let newRange = new Range();
+        newRange.setStart(this._lineArray[startLine].uiElement, startIndex);
+        newRange.setEnd(this._lineArray[endLine].uiElement, endIndex);
+
+        return newRange;
+    }
     /*// print xor wrap xor specialAction ?? or...
     keyAction options = {
         printKey: false,
@@ -604,7 +621,12 @@ class _gd_sandbox_editor{
         console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
         //keyboardEvent.preventDefault();
         if(key){
-            if(this.selectionActive){
+            if(key.keyCombination){
+                this.genericKeyAction = this.keyCombinationKeyAction.bind(this);
+                this.keyCombinationMap.set(keyboardEvent.key, {down: true});   
+                ++this.keyCombinationDownCount;
+            }
+            else if(this.selectionActive){
                 if(key.wrapText){
                     keyboardEvent.preventDefault();
                     if(key.printBrut){
@@ -647,17 +669,12 @@ class _gd_sandbox_editor{
 
             }
         }
-        if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
+        else if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
             keyboardEvent.preventDefault();
             this.deleteSelection();
             //debugger;
             this.__print(keyboardEvent.key);
             console.log("to basic data:  " + keyboardEvent.key);
-        }
-        else if(key.keyCombination){
-            this.genericKeyAction = this.keyCombinationKeyAction.bind(this);
-            this.keyCombinationMap.set(keyboardEvent.key, {down: true});   
-            ++this.keyCombinationDownCount;
         }
         else if(!this.keyActionExceptionMap.has(keyboardEvent.key)){
             keyboardEvent.preventDefault();
@@ -677,6 +694,12 @@ class _gd_sandbox_editor{
         if(keycombvalue && !keycombvalue.down){
             ++this.keyCombinationDownCount;
             this.keyCombinationMap.set(keyboardEvent.key, {down: true});   
+        }
+        else if(keyboardEvent.key == "a" || keyboardEvent.key == "A" && 
+        this.keyCombinationDownCount == 1 && this.keyActionExceptionMap.get("Control").down){
+            keyboardEvent.preventDefault();
+            console.log("SELECT ALL");
+            this.selectAll();
         }
         console.log("this.keyCombinationDownCount : " + this.keyCombinationDownCount);
     }
@@ -823,7 +846,7 @@ class _gd_sandbox_editor{
         }
         if(startLine != endLine){
             //Multiple splice
-            for(let i = startLine  + 1; i < endLine; ++i){
+            for(let i = startLine  + 1; i < endLine;){
                 this.deleteLine(i);
                 --endLine;
             }
@@ -1333,17 +1356,11 @@ function getValidParent(node){
     if(node._gdm){
         return node;
     }
-    
-    node = node.parentNode;
-    let i = 10;
-    while(i > 0){
-        if(node._gdm){
-            return node;
-        }
-        node = node.parentNode;
-        --i;
+    else if(node._gdm_editor || node === document.documentElement || node == undefined){
+        return null;
     }
-    return null;
+
+    return getValidParent(node.parentNode);
 }
 //for key action call function sloted to be called before the main bloc.
 const _slot_keyAction = {
