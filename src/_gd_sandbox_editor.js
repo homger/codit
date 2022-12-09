@@ -111,6 +111,7 @@ class _gd_sandbox_editor{
         
         
         this.keyAction = this.keyAction.bind(this);
+        this.keyUpAction = this.keyUpAction.bind(this);
 
         this._lineArray = [];
         this._lineMap = new Map(); //to test will delete this._lineArray if ok
@@ -128,6 +129,7 @@ class _gd_sandbox_editor{
         this.copyPastSetup();
         this.keyActionExceptionSetup();
         this.keyActionSetup();
+        this.keyCombinationSetup();
         //this.mutationObserverSetup(); Useless for now
         
         /*this._editor.addEventListener("keyup", function(){
@@ -135,7 +137,7 @@ class _gd_sandbox_editor{
             console.log(`slect start:  ${this._getSelector().anchorOffset} || slect end: ${this._getSelector().focusOffset}`);
         }.bind(this));*/
         this._editor.addEventListener("keydown", this.keyAction);
-        //this._editor.addEventListener("keyup", this.keyAction);
+        this._editor.addEventListener("keyup", this.keyUpAction);
 
         this.hasFocus = false
         this._editor.addEventListener("focus", this.onFocus.bind(this));
@@ -515,13 +517,21 @@ class _gd_sandbox_editor{
         beforeWrapValue:"",
         afterWrapValue:"",
         preventDefault: false,
-        keyCombination: false,
+        keyCombination: {down: false},
     }
     */
     
     keyCombinationSetup(){
         this.keyCombinationMap = new Map();
-        this.keyCombinationDown = 0;
+        this.keyCombinationDownCount = 0;
+
+        this.addKeyCombination("Control");
+        this.addKeyCombination("Alt");
+        this.addKeyCombination("Shift");
+    }
+    addKeyCombination(keyValue){
+        this.keyCombinationMap.set(keyValue, {down: false});
+        this.addKeyAction(keyValue, {keyCombination: true});
     }
     keyActionExceptionSetup(){
         this.keyActionExceptionMap = new Map();
@@ -535,6 +545,7 @@ class _gd_sandbox_editor{
         this.keyActionExceptionMap.set(keyValue, null);
     }
     keyActionSetup(){
+        this.genericKeyAction = this.classicKeyAction.bind(this);
         this.keyActionMap = new Map();
 
         this.addKeyAction("Shift__", {specialAction: true, specialFunction: function(){
@@ -564,10 +575,10 @@ class _gd_sandbox_editor{
             cursorOffset: -1});
         //this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: this.splitLine});
-        this.addKeyAction("__Control", {specialAction: true, specialFunction: function(){
+        /*this.addKeyAction("__Control", {specialAction: true, specialFunction: function(){
             //this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
-            this.insertLine();
-        }.bind(this)});
+            //this.insertLine();
+        }.bind(this)});*/
         this.addKeyAction("²", {
             printKey: true, printValue: "<special></special>", printBrut: true,
             wrapText: true, beforeWrapValue:"<special>", afterWrapValue:"</special>",
@@ -580,81 +591,107 @@ class _gd_sandbox_editor{
     }
     
     keyAction(keyboardEvent){
-            
-            _slot_keyAction_call();
+        this.genericKeyAction(keyboardEvent);
+    }
 
+    classicKeyAction(keyboardEvent){
             
-            //debugger;
-            let key = this.keyActionMap.get(keyboardEvent.key);
-            console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
-            //keyboardEvent.preventDefault();
-            if(key){
-                
-            
-                if(this.selectionActive){
-                    if(key.wrapText){
-                        keyboardEvent.preventDefault();
-                        if(key.printBrut){
-                            this.__wrapSelection_brut(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
-                        }
-                        else{
-                            this.__wrapSelection(this.filteredSelector(), key.beforeWrapValue, key.afterWrapValue);
-                        }
-                        
+        _slot_keyAction_call();
+
+        
+        //debugger;
+        let key = this.keyActionMap.get(keyboardEvent.key);
+        console.log("VR C INDEX BEFORE UPDATE: " + vrCursor.index);
+        //keyboardEvent.preventDefault();
+        if(key){
+            if(this.selectionActive){
+                if(key.wrapText){
+                    keyboardEvent.preventDefault();
+                    if(key.printBrut){
+                        this.__wrapSelection_brut(this._getSelector(), key.beforeWrapValue, key.afterWrapValue);
                     }
-                    else if(key.printKey){
-                        keyboardEvent.preventDefault();
-                        this.deleteSelection();
-                        if(key.printBrut){
-                            this.__print_brut(key.printValue);
-                        }
-                        else{
-                            this.__print(key.printValue);
-                        }
-                        
+                    else{
+                        this.__wrapSelection(this.filteredSelector(), key.beforeWrapValue, key.afterWrapValue);
                     }
-                    else if(key.specialAction){
-                        keyboardEvent.preventDefault();
-                        key.specialFunction();
-                    }
+                    
                 }
                 else if(key.printKey){
                     keyboardEvent.preventDefault();
-                    //debugger;
-                    if(key.cursorOffset){
-                        this.__print(key.printValue, key.cursorOffset);
+                    this.deleteSelection();
+                    if(key.printBrut){
+                        this.__print_brut(key.printValue);
                     }
                     else{
                         this.__print(key.printValue);
                     }
+                    
                 }
                 else if(key.specialAction){
                     keyboardEvent.preventDefault();
                     key.specialFunction();
-
                 }
             }
-            else if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
+            else if(key.printKey){
                 keyboardEvent.preventDefault();
-                this.deleteSelection();
                 //debugger;
-                this.__print(keyboardEvent.key);
-                console.log("to basic data:  " + keyboardEvent.key);
+                if(key.cursorOffset){
+                    this.__print(key.printValue, key.cursorOffset);
+                }
+                else{
+                    this.__print(key.printValue);
+                }
             }
-            else if(!this.keyActionExceptionMap.has(keyboardEvent.key)){
+            else if(key.specialAction){
                 keyboardEvent.preventDefault();
+                key.specialFunction();
+
             }
-            //vrCursor.updateFrom("anchor_selection");
+        }
+        if(keyboardEvent.key.length == 1 && keyboardEvent.key.search(VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP) == 0){
+            keyboardEvent.preventDefault();
+            this.deleteSelection();
+            //debugger;
+            this.__print(keyboardEvent.key);
+            console.log("to basic data:  " + keyboardEvent.key);
+        }
+        else if(key.keyCombination){
+            this.genericKeyAction = this.keyCombinationKeyAction.bind(this);
+            this.keyCombinationMap.set(keyboardEvent.key, {down: true});   
+            ++this.keyCombinationDownCount;
+        }
+        else if(!this.keyActionExceptionMap.has(keyboardEvent.key)){
+            keyboardEvent.preventDefault();
+        }
+        //vrCursor.updateFrom("anchor_selection");
 
-            
+        
 
-            _slot_keyAction_add(vrCursor.updateFrom, "anchor_selection");
-            
-            this.__filteredSelectorObjectUpToDate = false;
-            //alert(keyboardEvent.key);*/
-
+        _slot_keyAction_add(vrCursor.updateFrom, "anchor_selection");
+        
+        this.__filteredSelectorObjectUpToDate = false;
+        //alert(keyboardEvent.key);*/
+    }
+    keyCombinationKeyAction(keyboardEvent){
+        //debugger;
+        let keycombvalue = this.keyCombinationMap.get(keyboardEvent.key);
+        if(keycombvalue && !keycombvalue.down){
+            ++this.keyCombinationDownCount;
+            this.keyCombinationMap.set(keyboardEvent.key, {down: true});   
+        }
+        console.log("this.keyCombinationDownCount : " + this.keyCombinationDownCount);
     }
 
+    keyUpAction(keyboardEvent){
+        let key = this.keyCombinationMap.get(keyboardEvent.key);
+        if(key && key.down){
+            --this.keyCombinationDownCount;
+            this.keyCombinationMap.set(keyboardEvent.key, {down: false});  
+            if(this.keyCombinationDownCount == 0){
+                this.genericKeyAction = this.classicKeyAction.bind(this);
+            }
+        }
+        console.log("this.keyCombinationDownCount : " + this.keyCombinationDownCount);
+    }
 
     newLine(line = new _line("")){
         
@@ -848,6 +885,7 @@ class _gd_sandbox_editor{
     copyPastSetup(){
         this.copyBuffer = null;
         this._editor.addEventListener("paste", this.pastFromPastEvent.bind(this));
+        this._editor.addEventListener("cut", this.cut.bind(this));
     }
 
     copy(selection){
@@ -871,8 +909,10 @@ class _gd_sandbox_editor{
     past(){
         
     }
-    cut(selection){
-        
+    cut(cutEvent){
+        cutEvent.preventDefault();
+        cutEvent.clipboardData.setData('text/plain', this._getSelector().toString());
+        this.deleteSelection();
     }
 
     updateEditor_from_lineArray(){ //use after reorder line
