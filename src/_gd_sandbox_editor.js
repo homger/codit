@@ -715,6 +715,7 @@ class _gd_sandbox_editor{
             this.selectAll();
         }
         console.log("this.keyCombinationDownCount : " + this.keyCombinationDownCount);
+        this.__filteredSelectorObjectUpToDate = false;
     }
 
     keyUpAction(keyboardEvent){
@@ -887,6 +888,7 @@ class _gd_sandbox_editor{
 
             vrCursor.update("carret");
         }
+        this.__filteredSelectorObjectUpToDate = false;
     }
     lineMutationFonction(mutationRecordArray, mutationObserver){
         //debugger;
