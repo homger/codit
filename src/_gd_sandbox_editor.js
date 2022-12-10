@@ -476,10 +476,19 @@ class _gd_sandbox_editor{
             
         }
         else{
-            --vrCursor.index
-            this._lineArray[vrCursor.line].backspace(vrCursor.index);
+            if(vrCursor.index > 0){
+                --vrCursor.index;
+                this._lineArray[vrCursor.line].backspace(vrCursor.index);
+                this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+            }
+            else if(vrCursor.index == 0 && vrCursor.line > 0){
+                vrCursor.left();
+                this._lineArray[vrCursor.line].appendLine(this._lineArray[vrCursor.line + 1]);
+                this.deleteLine(vrCursor.line + 1);
+                this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+            }
             
-            this.setCursorPosition(this._lineArray[vrCursor.line].uiElement, vrCursor.index);
+            //--vrCursor.index
         }
     }
     moveCursorLeft(x){
@@ -506,7 +515,10 @@ class _gd_sandbox_editor{
         this.__updateCursorPosition();
     }
     selectAll(){
-        this._getSelector().addRange(this.createRange(0,0,this.lineCount - 1, this._lineArray[this.lineCount - 1].length - 1));
+        //debugger;
+        this._getSelector().removeAllRanges();
+        this._getSelector().addRange(this.createRange(0,0,this.lineCount - 1, this._lineArray[this.lineCount - 1].length));
+        console.log(this._getSelector());
     }
 
     createRange(startLine, startIndex, endLine, endIndex){
@@ -516,8 +528,9 @@ class _gd_sandbox_editor{
         
         //debugger;
         let newRange = new Range();
-        newRange.setStart(this._lineArray[startLine].uiElement, startIndex);
-        newRange.setEnd(this._lineArray[endLine].uiElement, endIndex);
+        let cachuielement = this._lineArray[endLine].lastNode;
+        newRange.setStart(this._lineArray[startLine].firstNode, startIndex);
+        newRange.setEnd(cachuielement, endIndex);
 
         return newRange;
     }
@@ -828,7 +841,7 @@ class _gd_sandbox_editor{
             console.log(selection);
             return;
         }
-            
+        //debugger;
         let startLine = selection.startLine;
         let endLine = selection.endLine;
         let startIndex = selection.startIndex;
@@ -862,7 +875,7 @@ class _gd_sandbox_editor{
                 this.deleteLine(endLine);
                 --endLine;
             }*/
-
+            //debugger;
         }
         else{
             
@@ -1062,7 +1075,9 @@ class _line{
 
         //***to-do for mutiline textwrap */
         this.highlightSetup();
+
         this.basicTextData = initialStringValue;//initialStringValue.replaceAll(NOT_VALID_BASIC_TEXT_DATA_VALUES__AS_REGXP, "");
+        
         
         // this.basicTextData IS main plain text
         // only plain text for now
@@ -1182,6 +1197,14 @@ class _line{
         console.log(this.textn);
     }
     
+    get firstNode(){
+        return this.textNodeList[0];
+    }
+    get lastNode(){
+        return this.textNodeList[this.textNodeList.length - 1];
+    }
+
+
     wrapText(startIndex, startString, endIndex, endString){
         /**
          * 
@@ -1286,6 +1309,7 @@ class _line{
         
     }
     backspace(index){
+        //debugger;
         if(this.length > 0){
             this.basicTextData = this.basicTextData.substring(0, index) + this.basicTextData.substring(index + 1);
 
