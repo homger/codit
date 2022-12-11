@@ -44,6 +44,12 @@ const vrCursor = {
                 this.line = !isNaN(valid_anchor._line_number)?  valid_anchor._line_number : this.line;
                 this.index = currentSelection.anchorOffset;
                 console.log("line :  " + this.line + "       index :  " + this.index);
+            case "filteredSelector":
+                
+                this.sloted_gd_sandbox_editor.__filteredSelectorObjectUpToDate = false;
+                this.line = this.sloted_gd_sandbox_editor.filteredSelector().startLine;
+                this.index = this.sloted_gd_sandbox_editor.filteredSelector().startIndex;
+                console.log("line :  " + this.line + "       index :  " + this.index);
             default: return;
         }
     },
@@ -64,7 +70,7 @@ const vrCursor = {
             }
         }
     },
-    down : function(){ //USE WITH CARE
+    down : function(){
         if(this.sloted_gd_sandbox_editor.lineCount > this.line + 1){
             ++this.line;
             if(this.index > this.sloted_gd_sandbox_editor.current_line.length - 1){
@@ -72,7 +78,7 @@ const vrCursor = {
             }
         }
     },
-    left : function(){ //USE WITH CARE
+    left : function(){
         if(this.index > 0){
             --this.index;
         }
@@ -81,7 +87,7 @@ const vrCursor = {
             this.index = this.sloted_gd_sandbox_editor.current_line.length;
         }
     },
-    right : function(){ //USE WITH CARE
+    right : function(){
         if(this.sloted_gd_sandbox_editor.current_line.length > this.index){
             ++this.index;
         }
@@ -89,6 +95,12 @@ const vrCursor = {
             ++this.line;
             this.index = 0;
         }
+    },
+    home : function(){ 
+        this.index = 0;
+    },
+    end : function(){ 
+        this.index = this.sloted_gd_sandbox_editor.current_line.length;
     },
 
 }
@@ -586,6 +598,9 @@ class _gd_sandbox_editor{
         this.addKeyAction("ArrowRight", {specialAction: true, specialFunction: this.ArrowRight.bind(this)});
         this.addKeyAction("ArrowUp", {specialAction: true, specialFunction: this.ArrowUp.bind(this)});
         this.addKeyAction("ArrowDown", {specialAction: true, specialFunction: this.ArrowDown.bind(this)});
+        this.addKeyAction("Home", {specialAction: true, specialFunction: function(){ vrCursor.home(); vrCursor.update("carret"); }.bind(this)});
+        this.addKeyAction("End", {specialAction: true, specialFunction: function(){ vrCursor.end(); vrCursor.update("carret"); }.bind(this)});
+
 
         this.addKeyAction("Tab", {printKey: true, printValue: "  "});
         this.addKeyAction("Backspace", {specialAction: true, specialFunction: this.backspace.bind(this)});
@@ -749,6 +764,7 @@ class _gd_sandbox_editor{
         
             //debugger;
         let newLine = this._lineArray[lineNumber].splitLine_returnLine(splitIndex);
+        vrCursor.index = 0;
         this.insertLine(newLine, lineNumber);
     }
     insertLine(line = new _line(""), index = this.filteredSelector().startLine){
@@ -776,7 +792,7 @@ class _gd_sandbox_editor{
 
         vrCursor.line = line._line_number;
         vrCursor.index = vrCursor.index % (line.basicTextData.length + 1);
-        this.setCursorPosition(line.uiElement, this.cursorIndex % line.textData.length);
+        this.setCursorPosition(line.uiElement, vrCursor.index);
         this.lineCount += 1;
         
         this.checkLineCount();
@@ -935,9 +951,34 @@ class _gd_sandbox_editor{
     }
     pastFromPastEvent(pasteEvent){
         let pasteData = pasteEvent.clipboardData.getData("text/plain");
-        console.log("paste DATA :" + this.split_string_by_line_break(pasteData));
         pasteEvent.preventDefault();
-        this.split_string_by_line_break(pasteData).forEach(string => this.insertLine( new _line(string)));
+
+        let pasteDataArray = this.split_string_by_line_break(pasteData);
+
+        pasteDataArray.forEach(string => console.log("'" + string + "'"));
+        //debugger;
+        console.log("Paste data  lenght:  "  + pasteDataArray.length);
+        
+        this.deleteSelection();
+        if(pasteDataArray.length == 1){
+            
+            this.__print(pasteDataArray[0]);
+            /*this.current_line.addString(pasteDataArray[0]);
+            vrCursor.end();*/
+            
+            vrCursor.updateFrom("filteredSelector");
+        }
+        else if(pasteDataArray.length > 1){
+            this.splitLine();
+            vrCursor.left();
+            this.current_line.addString(pasteDataArray[0]);
+            vrCursor.end();
+            for(let i = 1; i < pasteDataArray.length; ++i){
+                this.insertLine(new _line(pasteDataArray[i]));
+            }
+        
+            vrCursor.update("carret");
+        }
         //this.insertLine(new _line(pasteData));
     }
     split_string_by_line_break(string){
