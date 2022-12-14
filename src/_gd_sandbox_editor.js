@@ -571,6 +571,7 @@ class _gd_sandbox_editor{
     
     keyCombinationSetup(){
         this.keyCombinationMap = new Map();
+        this.combinationStarter_Keys = new Map();
         this.keyCombinationDownCount = 0;
 
         this.addKeyCombination("Control");
@@ -735,6 +736,7 @@ class _gd_sandbox_editor{
             console.log("SELECT ALL");
             this.selectAll();
         }
+        keyboardEvent.preventDefault();
         console.log("this.keyCombinationDownCount : " + this.keyCombinationDownCount);
         this.__filteredSelectorObjectUpToDate = false;
     }
