@@ -570,16 +570,75 @@ class _gd_sandbox_editor{
     */
     
     keyCombinationSetup(){
-        this.keyCombinationMap = new Map();
-        this.combinationStarter_Keys = new Map();
-        this.keyCombinationDownCount = 0;
+        
+        this.combination_Starter_Keys = new Map();
+        this.combination_Starter_Keys_down_count = 0;
+        /**
+         * this.combination_Finisher_Data:
+         * key = name of finishing key:  Control + a = a is finisher.
+         * value = {
+         *  1:[["Control",true, specialFunction], ["Alt", false], ["Meta", true, specialFunction]],
+         *  2:[["Control","Alt", false], ["Control","Maj", true, specialFunction], ["Control", "Shift", true, specialFunction], ["Alt", "Shift", false]],
+         * }
+         */
+        this.combination_Finisher_Data = new Map();
 
-        this.addKeyCombination("Control");
-        this.addKeyCombination("Alt");
-        this.addKeyCombination("Shift");
+        this.combinationFinisherKeys = new Map();
+
+        
+        this.addCombination_Starter_Keys("Control");
+        this.addCombination_Starter_Keys("Alt");
+        this.addCombination_Starter_Keys("Shift");
+
+        this.addKeyCombination( function(){alert("Alt ! ");}.bind(this) , "Alt","p");
+        this.addKeyCombination( function(){alert("Control ! ");}.bind(this) , "Control","p");
+
+        this.addKeyCombination( function(){this.__print("Hello kitty");}.bind(this) , "Control","t");
+
+        this.add_combinationFinisherKeys("_l","p", "0","p", "r","t");
+        
     }
-    addKeyCombination(keyValue){
-        this.keyCombinationMap.set(keyValue, {down: false});
+    add_combinationFinisherKeys(...finisherKeysPair){
+        //keyvalue, finisherkeyvalue
+        for(let i = 0; i < finisherKeysPair.length; i += 2){
+            this.combinationFinisherKeys.set(finisherKeysPair[i], finisherKeysPair[i + 1]);
+        }
+    }
+    addKeyCombination(specialFunction = undefined, ...key_sequence){
+
+        let finisherKey = key_sequence[key_sequence.length - 1];
+        let key_sequence_length = key_sequence.length;
+
+        let additional_key_sequence = key_sequence.splice(0, key_sequence_length - 1);
+        if(specialFunction === undefined){
+            additional_key_sequence.push(false);
+        }
+        else{
+            additional_key_sequence.push(true, specialFunction);
+        }
+
+
+        //debugger;
+        if(this.combination_Finisher_Data.has(finisherKey)){
+            
+            if(this.combination_Finisher_Data.get(finisherKey)[key_sequence_length - 1]){
+                this.combination_Finisher_Data.get(finisherKey)[key_sequence_length - 1].push(additional_key_sequence);
+            }
+            else{
+                this.combination_Finisher_Data.get(finisherKey)[key_sequence_length - 1] = [additional_key_sequence];
+            }
+        }
+        else{
+            this.combination_Finisher_Data.set(finisherKey,{
+                [key_sequence_length - 1]: [additional_key_sequence],
+            });
+        }
+        console.log("addKeyCombination key_sequence_length : " + key_sequence_length);
+        this.add_combinationFinisherKeys(finisherKey,finisherKey);
+    }
+    addCombination_Starter_Keys(keyValue){
+        
+        this.combination_Starter_Keys.set(keyValue, {down: false});
         this.addKeyAction(keyValue, {keyCombination: true});
     }
     keyActionExceptionSetup(){
@@ -658,8 +717,8 @@ class _gd_sandbox_editor{
         if(key){
             if(key.keyCombination){
                 this.genericKeyAction = this.keyCombinationKeyAction.bind(this);
-                this.keyCombinationMap.set(keyboardEvent.key, {down: true});   
-                ++this.keyCombinationDownCount;
+                this.combination_Starter_Keys.set(keyboardEvent.key, {down: true});   
+                ++this.combination_Starter_Keys_down_count;
             }
             else if(this.selectionActive){
                 if(key.wrapText){
@@ -724,35 +783,93 @@ class _gd_sandbox_editor{
         //alert(keyboardEvent.key);*/
     }
     keyCombinationKeyAction(keyboardEvent){
-        //debugger;
-        let keycombvalue = this.keyCombinationMap.get(keyboardEvent.key);
+        
+        let keycombvalue = this.combination_Starter_Keys.get(keyboardEvent.key);
         if(keycombvalue && !keycombvalue.down){
-            ++this.keyCombinationDownCount;
-            this.keyCombinationMap.set(keyboardEvent.key, {down: true});   
+            ++this.combination_Starter_Keys_down_count;
+            this.combination_Starter_Keys.set(keyboardEvent.key, {down: true});   
         }
-        else if(keyboardEvent.key == "a" || keyboardEvent.key == "A" && 
-        this.keyCombinationDownCount == 1 && this.keyActionExceptionMap.get("Control").down){
-            keyboardEvent.preventDefault();
-            console.log("SELECT ALL");
-            this.selectAll();
+        else if(this.combinationFinisherKeys.has(keyboardEvent.key)){
+            //debugger;
+            let keyCombinationData = this.keyCombination_Active(keyboardEvent.key);
+            if(keyCombinationData !== undefined){
+                if(keyCombinationData.hasSpecialFunction){
+                    keyboardEvent.preventDefault();
+                    keyCombinationData.specialFunction();
+                }
+                else{
+                    console.log("this.combination_Starter_Keys_down_count : " + this.combination_Starter_Keys_down_count);
+                    return;
+                }
+            }
         }
         keyboardEvent.preventDefault();
-        console.log("this.keyCombinationDownCount : " + this.keyCombinationDownCount);
-        this.__filteredSelectorObjectUpToDate = false;
+        console.log("this.combination_Starter_Keys_down_count : " + this.combination_Starter_Keys_down_count);
+        //this.__filteredSelectorObjectUpToDate = false;
     }
 
     keyUpAction(keyboardEvent){
-        let key = this.keyCombinationMap.get(keyboardEvent.key);
+        let key = this.combination_Starter_Keys.get(keyboardEvent.key);
         if(key && key.down){
-            --this.keyCombinationDownCount;
-            this.keyCombinationMap.set(keyboardEvent.key, {down: false});  
-            if(this.keyCombinationDownCount == 0){
+            --this.combination_Starter_Keys_down_count;
+            this.combination_Starter_Keys.set(keyboardEvent.key, {down: false});  
+            if(this.combination_Starter_Keys_down_count == 0){
                 this.genericKeyAction = this.classicKeyAction.bind(this);
             }
         }
-        console.log("this.keyCombinationDownCount : " + this.keyCombinationDownCount);
+        console.log("this.combination_Starter_Keys_down_count : " + this.combination_Starter_Keys_down_count);
     }
 
+    keyCombination_Active(key){
+        let combinationData = this.combination_Finisher_Data.get( this.combinationFinisherKeys.get(key) )[this.combination_Starter_Keys_down_count];
+        if(combinationData == undefined){
+            return undefined;
+        }
+
+
+        for(let i = 0; i < combinationData.length; ++i){
+
+            let combinationSequance = combinationData[i];
+            let pressedCombinationStarterKeys_found = 0;
+
+            for(let i = 0; i < this.combination_Starter_Keys_down_count; ++i){
+                if(this.combination_Starter_Keys.get(combinationSequance[i]).down ){
+                    ++pressedCombinationStarterKeys_found;
+                }
+            }
+
+            if(pressedCombinationStarterKeys_found == this.combination_Starter_Keys_down_count){
+                //debugger;
+                return {
+                    hasSpecialFunction: combinationSequance[this.combination_Starter_Keys_down_count],
+                    specialFunction: combinationSequance[this.combination_Starter_Keys_down_count + 1],
+                };
+
+            }
+
+        }
+        /*combinationData.forEach((combinationSequance, index) => {
+
+            let pressedCombinationStarterKeys_found = 0;    
+            for(let i = 0; i < this.combination_Starter_Keys_down_count; ++i){
+                if(this.combination_Starter_Keys.get(combinationSequance[i]).down ){
+                    ++pressedCombinationStarterKeys_found;
+                }
+            }
+
+            if(pressedCombinationStarterKeys_found == this.combination_Starter_Keys_down_count){
+                debugger;
+                return {
+                    hasSpecialFunction: combinationSequance[this.combination_Starter_Keys_down_count],
+                    specialFunction: combinationSequance[this.combination_Starter_Keys_down_count + 1],
+                };
+
+            }
+
+        })*/
+
+        return undefined;
+    }
     newLine(line = new _line("")){
         
         line.setLineNumber(this.lineCount);
