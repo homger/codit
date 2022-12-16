@@ -573,6 +573,9 @@ class _gd_sandbox_editor{
         
         this.combination_Starter_Keys = new Map();
         this.combination_Starter_Keys_down_count = 0;
+
+        this.combinationActionPending = false;
+        this.combinationActionFunction = undefined;
         /**
          * this.combination_Finisher_Data:
          * key = name of finishing key:  Control + a = a is finisher.
@@ -783,7 +786,10 @@ class _gd_sandbox_editor{
         //alert(keyboardEvent.key);*/
     }
     keyCombinationKeyAction(keyboardEvent){
-        
+        if(keyboardEvent.repeat){
+            keyboardEvent.preventDefault();
+            return;
+        }
         let keycombvalue = this.combination_Starter_Keys.get(keyboardEvent.key);
         if(keycombvalue && !keycombvalue.down){
             ++this.combination_Starter_Keys_down_count;
@@ -795,12 +801,17 @@ class _gd_sandbox_editor{
             if(keyCombinationData !== undefined){
                 if(keyCombinationData.hasSpecialFunction){
                     keyboardEvent.preventDefault();
-                    keyCombinationData.specialFunction();
+                    this.combinationActionPending = true;
+                    this.combinationActionFunction = keyCombinationData.specialFunction;
                 }
                 else{
+                    this.combinationActionPending = false;
                     console.log("this.combination_Starter_Keys_down_count : " + this.combination_Starter_Keys_down_count);
                     return;
                 }
+            }
+            else{
+                this.combinationActionPending = false;
             }
         }
         keyboardEvent.preventDefault();
@@ -815,6 +826,11 @@ class _gd_sandbox_editor{
             this.combination_Starter_Keys.set(keyboardEvent.key, {down: false});  
             if(this.combination_Starter_Keys_down_count == 0){
                 this.genericKeyAction = this.classicKeyAction.bind(this);
+                if(this.combinationActionPending){
+                    this.combinationActionFunction();
+                    this.combinationActionPending = false;
+                    this.combinationActionFunction = undefined;
+                }
             }
         }
         console.log("this.combination_Starter_Keys_down_count : " + this.combination_Starter_Keys_down_count);
@@ -832,8 +848,8 @@ class _gd_sandbox_editor{
             let combinationSequance = combinationData[i];
             let pressedCombinationStarterKeys_found = 0;
 
-            for(let i = 0; i < this.combination_Starter_Keys_down_count; ++i){
-                if(this.combination_Starter_Keys.get(combinationSequance[i]).down ){
+            for(let y = 0; y < this.combination_Starter_Keys_down_count; ++y){
+                if(this.combination_Starter_Keys.get(combinationSequance[y]).down ){
                     ++pressedCombinationStarterKeys_found;
                 }
             }
@@ -841,6 +857,7 @@ class _gd_sandbox_editor{
             if(pressedCombinationStarterKeys_found == this.combination_Starter_Keys_down_count){
                 //debugger;
                 return {
+                    index: i,
                     hasSpecialFunction: combinationSequance[this.combination_Starter_Keys_down_count],
                     specialFunction: combinationSequance[this.combination_Starter_Keys_down_count + 1],
                 };
@@ -848,25 +865,6 @@ class _gd_sandbox_editor{
             }
 
         }
-        /*combinationData.forEach((combinationSequance, index) => {
-
-            let pressedCombinationStarterKeys_found = 0;    
-            for(let i = 0; i < this.combination_Starter_Keys_down_count; ++i){
-                if(this.combination_Starter_Keys.get(combinationSequance[i]).down ){
-                    ++pressedCombinationStarterKeys_found;
-                }
-            }
-
-            if(pressedCombinationStarterKeys_found == this.combination_Starter_Keys_down_count){
-                debugger;
-                return {
-                    hasSpecialFunction: combinationSequance[this.combination_Starter_Keys_down_count],
-                    specialFunction: combinationSequance[this.combination_Starter_Keys_down_count + 1],
-                };
-
-            }
-
-        })*/
 
         return undefined;
     }
