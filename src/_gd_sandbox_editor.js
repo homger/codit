@@ -423,7 +423,8 @@ class _gd_sandbox_editor{
                 this._lineArray[startLine].insertString(startPrintValue, startIndex);
                 this._lineArray[endLine].insertString(endPrintValue, endIndex);
             }
-
+            //debugger;
+            this._getSelector().addRange(this.createRange(startLine, startIndex + startPrintValue.length, endLine, endIndex - endPrintValue.length));
             /*
             this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset);
             this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset);*/
@@ -591,27 +592,35 @@ class _gd_sandbox_editor{
         
         this.addCombination_Starter_Keys("Control");
         this.addCombination_Starter_Keys("Alt");
-        this.addCombination_Starter_Keys("Shift");
+        //this.addCombination_Starter_Keys("Shift");
 
-        this.addKeyCombination( function(){alert("Alt ! ");}.bind(this) , "Alt","p");
-        this.addKeyCombination( function(){alert("Control ! ");}.bind(this) , "Control","p");
-
-        this.addKeyCombination( function(){this.__print("Hello kitty");}.bind(this) , "Control","t");
+        this.addKeyCombination(["Alt","p"], function(){alert("Alt ! ");}.bind(this));
+        this.addKeyCombination(["Control","p"], function(){alert("Control ! ");}.bind(this));
+        
+        this.addKeyCombination(["Control","t"], function(){this.__print("Hello kitty");}.bind(this));
+        this.addKeyCombination(["Control","a"], this.selectAll.bind(this));
+        this.addKeyCombination(["Control","c"]);
+        this.addKeyCombination(["Control","v"]);
+        //this.addKeyCombination(["Control","c"]);
+        //this.addKeyCombination( function(){this.__print("Super combination");}.bind(this) , "Control","Alt","t","x"); Does not work. Will not make it work
 
         this.add_combinationFinisherKeys("_l","p", "0","p", "r","t");
         
     }
     add_combinationFinisherKeys(...finisherKeysPair){
-        //keyvalue, finisherkeyvalue
+        //arguments come in pair
+        //first argument = keyboardEvent.key, second argument = the actual value used to search for a valid combination. 
+        // can use this to make alias of key. alias key becomes usless as a key finisher
         for(let i = 0; i < finisherKeysPair.length; i += 2){
             this.combinationFinisherKeys.set(finisherKeysPair[i], finisherKeysPair[i + 1]);
         }
     }
-    addKeyCombination(specialFunction = undefined, ...key_sequence){
+    addKeyCombination(key_sequence, specialFunction = undefined){
 
-        let finisherKey = key_sequence[key_sequence.length - 1];
+        let finisherKey = key_sequence[key_sequence.length - 1].toLowerCase();
         let key_sequence_length = key_sequence.length;
 
+        //First create an array that contain the data of the new sequence
         let additional_key_sequence = key_sequence.splice(0, key_sequence_length - 1);
         if(specialFunction === undefined){
             additional_key_sequence.push(false);
@@ -622,8 +631,10 @@ class _gd_sandbox_editor{
 
 
         //debugger;
+        //if "finisherKey" already has at least one sequance using it
         if(this.combination_Finisher_Data.has(finisherKey)){
             
+            //if "finisherKey" already has at least one sequance of length = key_sequence_length - 1
             if(this.combination_Finisher_Data.get(finisherKey)[key_sequence_length - 1]){
                 this.combination_Finisher_Data.get(finisherKey)[key_sequence_length - 1].push(additional_key_sequence);
             }
@@ -637,7 +648,7 @@ class _gd_sandbox_editor{
             });
         }
         console.log("addKeyCombination key_sequence_length : " + key_sequence_length);
-        this.add_combinationFinisherKeys(finisherKey,finisherKey);
+        this.add_combinationFinisherKeys(finisherKey,finisherKey, finisherKey.toUpperCase(),finisherKey);
     }
     addCombination_Starter_Keys(keyValue){
         
@@ -689,10 +700,6 @@ class _gd_sandbox_editor{
             cursorOffset: -1});
         //this.addKeyAction("Backspace", {specialAction: true, specialFunction: function(textArea){}});
         this.addKeyAction("Enter", {specialAction: true, specialFunction: () => {this.splitLine(); vrCursor.down(); vrCursor.home(); vrCursor.update("carret");}});
-        /*this.addKeyAction("__Control", {specialAction: true, specialFunction: function(){
-            //this._lineArray[this.anchorNode.parentNode._line_number].insertBrutContent("<br>", this.anchorOffset)
-            //this.insertLine();
-        }.bind(this)});*/
         this.addKeyAction("²", {
             printKey: true, printValue: "<special></special>", printBrut: true,
             wrapText: true, beforeWrapValue:"<special>", afterWrapValue:"</special>",
