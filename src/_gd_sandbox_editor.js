@@ -424,7 +424,16 @@ class _gd_sandbox_editor{
                 this._lineArray[endLine].insertString(endPrintValue, endIndex);
             }
             //debugger;
-            this._getSelector().addRange(this.createRange(startLine, startIndex + startPrintValue.length, endLine, endIndex - endPrintValue.length));
+            this._getSelector().removeAllRanges();
+            if(startLine == endLine){
+                this._getSelector().addRange(this.createRange(startLine, startIndex + startPrintValue.length, endLine, endIndex + endPrintValue.length));
+            }
+                
+            else{
+                //debugger;
+                this._getSelector().addRange(this.createRange(startLine, startIndex + startPrintValue.length, endLine, endIndex));
+            }
+                
             /*
             this._lineArray[selection.anchorNode.parentNode._line_number].insertString(startPrintValue, selection.anchorOffset);
             this._lineArray[selection.focusNode.parentNode._line_number].insertString(endPrintValue, selection.focusOffset);*/
@@ -545,11 +554,12 @@ class _gd_sandbox_editor{
             throw new Error("startLine < 0 || endLine >= this.lineCount");
         }
         
+        
         //debugger;
         let newRange = new Range();
         let cachuielement = this._lineArray[endLine].lastNode;
         newRange.setStart(this._lineArray[startLine].firstNode, startIndex);
-        newRange.setEnd(cachuielement, endIndex);
+        newRange.setEnd(this._lineArray[endLine].lastNode, endIndex);
 
         return newRange;
     }
@@ -839,6 +849,11 @@ class _gd_sandbox_editor{
                     this.combinationActionFunction = undefined;
                 }
             }
+        }
+        else if(this.combinationActionPending){
+            this.combinationActionFunction();
+            this.combinationActionPending = false;
+            this.combinationActionFunction = undefined;
         }
         console.log("this.combination_Starter_Keys_down_count : " + this.combination_Starter_Keys_down_count);
     }
