@@ -50,6 +50,11 @@ const vrCursor = {
                 this.line = this.sloted_gd_sandbox_editor.filteredSelector().startLine;
                 this.index = this.sloted_gd_sandbox_editor.filteredSelector().startIndex;
                 console.log("line :  " + this.line + "       index :  " + this.index);
+            case "previousData":
+                
+                this.line = this.sloted_gd_sandbox_editor.lineBeforUnslot;
+                this.index = this.sloted_gd_sandbox_editor.indexBeforUnslot;
+                console.log("line :  " + this.line + "       index :  " + this.index);
             default: return;
         }
     },
@@ -121,7 +126,8 @@ class _gd_sandbox_editor{
         this.slothed_in_vrCursor = false;
         vrCursor.slothEditor(this);
         vrCursor.reset(this);
-        
+        this.getVrCursor = this.__vrCursor;
+        this.vrCursorSetup();
         
         this.keyAction = this.keyAction.bind(this);
         this.keyUpAction = this.keyUpAction.bind(this);
@@ -162,15 +168,27 @@ class _gd_sandbox_editor{
 
         
     }
+
+    get __vrCursor(){
+        return vrCursor;
+    }
+    vrCursorSetup(){
+        this.indexBeforUnslot = 0;
+        this.lineBeforUnslot = 0;
+    }
     onFocus(){
         if(this.lineCount == 0){
             this.newLine();
             this.focusedLine = 0;
         }
 
+        vrCursor.slothEditor(this);
+        vrCursor.updateFrom("previousData");
         this.hasFocus = true;
     }
     onFocusout(){
+        this.indexBeforUnslot = vrCursor.index;
+        this.lineBeforUnslot = vrCursor.line;
         this.hasFocus = false;
     }
     click(){
@@ -180,29 +198,20 @@ class _gd_sandbox_editor{
         return this._getSelector().anchorOffset == this._getSelector().focusOffset ? this._getSelector().focusOffset : undefined;
     }
     
-    /*set cursorIndex(index){
-        /*if(index > this.textAreaValueLength){
-            this._textArea.anchorOffset = this.textAreaValueLength - 1;
-            this._textArea.focusOffset = this.textAreaValueLength - 1;
-        }*//*
-        this._getSelector().anchorOffset += index;
-        this._getSelector().focusOffset += index;
-    }*/
-    /*moveCursorIndex(index){
-        this._textArea.anchorOffset = index;
-        this._textArea.focusOffset = index;
-    }*/
+
     get textAreaValueLength(){
         return this._editor.textContent.length;
     }
-    /*get textAreaValue(){
-        return this._textArea.value;
-    }
-    set textAreaValue(value){
-        return this._textArea.value = value;
-    }*/
+    
     get charAt(){
         return this._editor.textContent[index];
+    }
+
+    getDataAsString(){
+        let dataString = "";
+        this._lineArray.forEach((line) => {dataString += line.basicTextData;} );
+
+        return dataString;
     }
     _getSelector(){
         if(document.activeElement === this._editor)
